@@ -120,18 +120,18 @@ Produces a complete HTML literature review document.
 ## Repository Structure
 
 ```text
-Agentic-Literature-Survey-Workflow/
+agentic-literature-survey-workflow/
 │
 ├── README.md
-├── workflow.json
+├── Agentic  Literature Survey Workflow.json
 │
 ├── docs/
 │   ├── Project_Report.pdf
-│   ├── High-Level-Block-Diagram.png
+│   ├── High-Level_Block_Diagram.png
 │   ├── Agent_Interaction_Flowchart.png
 │
 ├── screenshots/
-│   ├── workflow_canvas.png
+│   ├── workflow_n8n.png
 │   ├── generated outputs
 |    .....
 
