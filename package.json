@@ -1,0 +1,38 @@
+{
+  "name": "agentic-literature-survey-workflow",
+  "version": "1.0.0",
+  "description": "Production-ready multi-agent literature survey workflow and automated review generator",
+  "main": "runner/server.js",
+  "scripts": {
+    "start": "node runner/server.js",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:local": "docker compose -f docker-compose.local.yml up -d",
+    "import": "bash scripts/import_workflow.sh",
+    "backup": "bash scripts/backup.sh",
+    "health": "bash scripts/healthcheck.sh",
+    "start:runner": "node runner/server.js",
+    "survey": "node runner/cli.js",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f n8n"
+  },
+  "keywords": [
+    "n8n",
+    "literature-survey",
+    "multi-agent",
+    "academic-research",
+    "production-deployment",
+    "docker",
+    "arxiv",
+    "pubmed",
+    "crossref",
+    "openalex",
+    "semantic-scholar",
+    "google-docs",
+    "open-source"
+  ],
+  "author": "Nidhishree N",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

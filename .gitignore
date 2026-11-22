@@ -1,0 +1,30 @@
+# Environment files
+.env
+.env.local
+.env.production
+*.env
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker & Persistence volumes
+postgres_data/
+n8n_data/
+caddy_data/
+caddy_config/
+
+# Output directories
+output/
+dist/
+build/
+*.log
+
+# n8n local files
+.n8n/

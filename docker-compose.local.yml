@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: literature_survey_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-n8n_prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-n8n_secure_password_replace_in_production_123!}
+      POSTGRES_DB: ${POSTGRES_DB:-n8n_survey_db}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-n8n_prod} -d ${POSTGRES_DB:-n8n_survey_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: literature_survey_n8n_dev
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-n8n_survey_db}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER:-n8n_prod}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:-n8n_secure_password_replace_in_production_123!}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-random_key_1234567890abcdef12345678}
+      - WEBHOOK_URL=http://localhost:5678
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=development
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - GENERIC_TIMEZONE=UTC
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AIRTABLE_API_KEY=${AIRTABLE_API_KEY}
+    volumes:
+      - n8n_data_dev:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data_dev:
+  n8n_data_dev:

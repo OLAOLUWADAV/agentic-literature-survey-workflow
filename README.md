@@ -138,32 +138,70 @@ agentic-literature-survey-workflow/
 ```
 
 
-## Installation
+## Production Deployment
+
+This repository includes a full production deployment stack with **PostgreSQL 16**, **n8n**, **Caddy** (automated SSL/TLS), automated workflow auto-import, and a standalone CLI/REST API runner.
+
+For the comprehensive production operations manual, see **[PRODUCTION.md](PRODUCTION.md)**.
+
+### Quick Start (Production Stack with Docker Compose)
+
+1. Clone the repository and configure environment variables:
+```bash
+git clone https://github.com/nidhi-shree/agentic-literature-survey-workflow.git
+cd agentic-literature-survey-workflow
+cp .env.example .env
+```
+
+2. Add your API keys (`GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GEMINI_API_KEY`) to `.env`.
+
+3. Deploy using the automated production script:
+```bash
+./scripts/deploy.sh
+# or using Make:
+make deploy
+```
+
+4. Access the services:
+- **n8n UI & Workflow Canvas:** `http://localhost:5678` (or `https://your-domain.com`)
+- **Interactive Form:** `http://localhost:5678/form/`
+
+---
+
+## Standalone CLI & REST API Runner
+
+You can also run literature reviews directly from the terminal or via REST API without launching n8n:
+
+### Run via Command Line (CLI)
+```bash
+npm run survey -- "EEG Seizure Prediction using Deep Learning"
+# Outputs saved to ./output/literature_review_<timestamp>.html
+```
+
+### Run Standalone Web Dashboard & REST API
+```bash
+npm run start:runner
+# Opens on http://localhost:3000
+# API endpoint: POST http://localhost:3000/api/survey {"topic": "..."}
+```
+
+---
+
+## Manual n8n Import (Alternative)
 
 ### Prerequisites
 
 - n8n
 - OpenRouter API Key
 - Gemini API Key
-- Airtable Account
+- Airtable Account (Optional)
 
 ### Import Workflow
 
-1. Clone the repository.
-
-```bash
-git clone https://github.com/nidhi-shree/agentic-literature-survey-workflow.git
-```
-
-2. Open n8n.
-
-3. Import `Agentic Literature Survey Workflow.json`.
-
-4. Configure API credentials.
-
-5. Activate the workflow.
-
-6. Execute the workflow.
+1. Open n8n.
+2. Import `workflows/Agentic_Literature_Survey_Workflow.prod.json` (or `Agentic Literature Survey Workflow.json`).
+3. Configure API credentials in `.env` or in n8n Credentials Manager.
+4. Activate and execute the workflow.
 
 
 ## Configuration

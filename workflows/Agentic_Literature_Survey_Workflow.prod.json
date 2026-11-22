@@ -1,0 +1,1000 @@
+{
+  "name": "Agentic Literature Survey Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.topic }}",
+        "options": {
+          "systemMessage": "You are an expert academic search strategist. Your task is to analyze a research topic and generate an exceptionally precise, highly diverse set of search queries strictly optimized for CrossRef, OpenAlex, PubMed, and ArXiv retrieval.\n\nGiven a research topic, you must output ONLY a raw, single valid JSON object. Do not wrap the output in markdown code blocks, and do not include any conversational introduction, explanation, or postamble. The output must start exactly with { and end exactly with }.\n\nThe JSON structure must match this exact schema:\n{\n  \"main_topic\": \"the core research topic\",\n  \"refined_queries\": [\n    \"query 1 - broad strategy\",\n    \"query 2 - architecture focus a\",\n    \"query 3 - architecture focus b\",\n    \"query 4 - dataset focus\",\n    \"query 5 - evaluation focus\",\n    \"query 6 - clinical application focus\",\n    \"query 7 - recent trends focus\",\n    \"query 8 - narrow specialist focus\"\n  ],\n  \"keywords\": [\"keyword1\", \"keyword2\", \"keyword3\", \"keyword4\", \"keyword5\"],\n  \"sub_topics\": [\"subtopic1\", \"subtopic2\", \"subtopic3\"],\n  \"exclusion_terms\": [\"term to exclude 1\", \"term to exclude 2\"],\n  \"time_range\": \"2018-2026\",\n  \"expected_domains\": [\"domain1\", \"domain2\"]\n}\n\nCRITICAL STRUCTURAL & SEARCH SYNTAX CONSTRAINTS:\n\n1. EXACT ARRAY INTERSECTION FORMULATION (8 MANDATORY QUERIES)\nThe 'refined_queries' array MUST contain exactly 8 specific queries. To eliminate semantic topic drift into general machine learning concepts, you MUST anchor target parameters using strict literal double quotes and the uppercase boolean \"AND\" operator. \n\nYou must generate the 8 items in the array following this strict architectural blueprint:\n- Index [0] (Broad Strategy): \"Core Term\" AND \"Core Concept\" AND \"General Field\"\n- Index [1] (Architecture Focus A): \"Core Term\" AND \"Core Concept\" AND \"Specific Model Type A\"\n- Index [2] (Architecture Focus B): \"Core Term\" AND \"Core Concept\" AND \"Specific Model Type B\"\n- Index [3] (Dataset Focus): \"Core Term\" AND \"Core Concept\" AND \"Specific Benchmark Dataset\"\n- Index [4] (Evaluation Focus): \"Core Term\" AND \"Core Concept\" AND \"Specific Validation Metric/Protocol\"\n- Index [5] (Clinical/Application Focus): \"Core Term\" AND \"Core Concept\" AND \"Hardware/Bedside/Wearable Constraint\"\n- Index [6] (Recent Trends Focus): \"Core Term\" AND \"Core Concept\" AND \"Emerging SOTA Framework\"\n- Index [7] (Narrow Specialist Focus): \"Core Term\" AND \"Highly Specific Micro-Domain or Feature Type\"\n\n2. STRICT PLATFORM WORD BAN\nNever include engine, database, or platform names anywhere in the JSON object. Absolute forbidden tokens include: 'arxiv', 'semantic scholar', 'crossref', 'pubmed', 'google scholar', 'ieee', 'openalex'.\n\n3. ESCAPED SYNTAX COMPLIANCE\nBecause this output is parsed programmatically, all interior literal search quotes within the JSON strings must be properly escaped as \\\\\" to protect validation parameters.\n\nEXEMPLAR COMPLIANT OUTPUT FORMAT:\n{\n  \"main_topic\": \"EEG Seizure Prediction\",\n  \"refined_queries\": [\n    \"\\\"EEG\\\" AND \\\"seizure prediction\\\" AND \\\"machine learning\\\"\",\n    \"\\\"EEG\\\" AND \\\"seizure forecasting\\\" AND \\\"deep learning\\\"\",\n    \"\\\"EEG\\\" AND \\\"epilepsy\\\" AND \\\"graph neural network\\\"\",\n    \"\\\"intracranial EEG\\\" AND \\\"seizure prediction\\\" AND \\\"transformer\\\"\",\n    \"\\\"wearable EEG\\\" AND \\\"seizure forecasting\\\" AND \\\"real-time monitoring\\\"\",\n    \"\\\"CHB-MIT\\\" AND \\\"EEG\\\" AND \\\"seizure prediction\\\"\",\n    \"\\\"EEG\\\" AND \\\"preictal state\\\" AND \\\"classification\\\"\",\n    \"\\\"epileptic seizure prediction\\\" AND \\\"time series analysis\\\"\"\n  ],\n  \"keywords\": [\"EEG\", \"seizure prediction\", \"epilepsy\", \"deep learning\", \"machine learning\"],\n  \"sub_topics\": [\"deep learning for EEG seizure prediction\", \"patient-specific forecasting\", \"wearable EEG monitoring\"],\n  \"exclusion_terms\": [\"seizure detection only\", \"classification without prediction\"],\n  \"time_range\": \"2018-2026\",\n  \"expected_domains\": [\"Biomedical Engineering\", \"Neuroscience\", \"Machine Learning\"]\n}",
+          "maxIterations": 5
+        }
+      },
+      "id": "4f007429-898b-47af-993f-be173075d78b",
+      "name": "Query Refiner Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        432,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://export.arxiv.org/api/query?search_query=all:{{ encodeURIComponent($('Parse Query Output').first().json.refined_queries[2]) }}&start=0&max_results=15&sortBy=relevance&sortOrder=descending",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "37efa094-1361-4478-a3ad-3652b1d9a995",
+      "name": "ArXiv Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        80
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "url": "=https://api.crossref.org/works?query={{ encodeURIComponent($('Parse Query Output').first().json.refined_queries[3]) }}&rows=15&filter=from-pub-date:2018&sort=relevance&mailto=research@survey.com",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "0bd19a98-ee7c-4166-9343-a729a05503ad",
+      "name": "CrossRef Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        288
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "url": "=https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={{ encodeURIComponent($('Parse Query Output').first().json.refined_queries[4]) }}&retmax=10&retmode=json&sort=relevance&datetype=pdat&mindate=2018&maxdate=2025",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "284b208b-b818-42ef-8659-8acfbcaa0007",
+      "name": "PubMed Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        480
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openalex.org/works?search={{ encodeURIComponent($('Parse Query Output').first().json.main_topic) }}&filter=publication_year:2018-2025&sort=cited_by_count:desc&per-page=15&select=id,title,authorships,publication_year,abstract_inverted_index,cited_by_count,doi,primary_location,concepts",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "833e47f6-9839-4aa0-9f52-5bfe1db19771",
+      "name": "OpenAlex Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        944,
+        672
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the AI response to extract refined queries\nconst agentOutput = $input.first().json.output || $input.first().json.text || \"{}\";\n\nlet parsedData;\ntry {\n  // Extract JSON from the response\n  const jsonMatch = agentOutput.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsedData = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error(\"No JSON found\");\n  }\n} catch (e) {\n  // Fallback: use the raw topic from the form submission\n  // We use .first() to safely get the data from your \"On form submission\" node\n  const rawTopic = $('On form submission').first().json.topic || 'machine learning';\n  parsedData = {\n    main_topic: rawTopic,\n    refined_queries: [rawTopic, rawTopic + ' deep learning', rawTopic + ' neural networks', rawTopic + ' survey', rawTopic + ' review'],\n    keywords: [rawTopic],\n    sub_topics: [rawTopic + ' applications'],\n    ieee_categories: ['Computer Science'],\n    exclusion_terms: [],\n    time_range: '2018-2026',\n    expected_domains: ['computer science']\n  };\n}\n\nreturn {\n  json: {\n    ...parsedData,\n    original_topic: parsedData.main_topic,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "1c62b586-3b78-4005-933d-31357711f243",
+      "name": "Parse Query Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge and normalize all search results from multiple sources\nconst normalizedPapers = [];\nconst seenTitles = new Set();\nconst seenDois = new Set();\n\nfunction cleanText(text) {\n  if (!text) return '';\n  return text.replace(/\\s+/g, ' ').trim();\n}\n\nfunction generateId() {\n  return 'paper_' + Math.random().toString(36).substr(2, 9);\n}\n\n// Process Semantic Scholar results (Query 1)\ntry {\n  const ss1 = $('Semantic Scholar - Query 1').first().json;\n  const ss1Papers = ss1.data || [];\n  ss1Papers.forEach(paper => {\n    const title = cleanText(paper.title);\n    const doi = paper.externalIds?.DOI;\n    if (!title || seenTitles.has(title.toLowerCase())) return;\n    seenTitles.add(title.toLowerCase());\n    if (doi) seenDois.add(doi);\n    normalizedPapers.push({\n      id: generateId(),\n      title: title,\n      authors: (paper.authors || []).map(a => a.name).join(', '),\n      year: paper.year || 'N/A',\n      abstract: cleanText(paper.abstract) || 'Abstract not available',\n      doi: doi || '',\n      citations: paper.citationCount || 0,\n      journal: paper.journal?.name || '',\n      source: 'Semantic Scholar',\n      fields: (paper.fieldsOfStudy || []).join(', '),\n      pdf_url: paper.openAccessPdf?.url || '',\n      paperId: paper.paperId || ''\n    });\n  });\n} catch(e) { console.log('SS1 error:', e.message); }\n\n// Process Semantic Scholar results (Query 2)\ntry {\n  const ss2 = $('Semantic Scholar - Query 2').first().json;\n  const ss2Papers = ss2.data || [];\n  ss2Papers.forEach(paper => {\n    const title = cleanText(paper.title);\n    const doi = paper.externalIds?.DOI;\n    if (!title || seenTitles.has(title.toLowerCase())) return;\n    seenTitles.add(title.toLowerCase());\n    if (doi) seenDois.add(doi);\n    normalizedPapers.push({\n      id: generateId(),\n      title: title,\n      authors: (paper.authors || []).map(a => a.name).join(', '),\n      year: paper.year || 'N/A',\n      abstract: cleanText(paper.abstract) || 'Abstract not available',\n      doi: doi || '',\n      citations: paper.citationCount || 0,\n      journal: paper.journal?.name || '',\n      source: 'Semantic Scholar',\n      fields: (paper.fieldsOfStudy || []).join(', '),\n      pdf_url: paper.openAccessPdf?.url || '',\n      paperId: paper.paperId || ''\n    });\n  });\n} catch(e) { console.log('SS2 error:', e.message); }\n\n// Process ArXiv results (XML → parse)\ntry {\n  const arxivXml = $('ArXiv Search').first().json.data || $('ArXiv Search').first().binary?.data || '';\n  const arxivText = typeof arxivXml === 'string' ? arxivXml : JSON.stringify(arxivXml);\n  const entries = arxivText.split('<entry>').slice(1);\n  entries.forEach(entry => {\n    const titleMatch = entry.match(/<title>([\\s\\S]*?)<\\/title>/);\n    const abstractMatch = entry.match(/<summary>([\\s\\S]*?)<\\/summary>/);\n    const authorsMatches = [...entry.matchAll(/<name>([\\s\\S]*?)<\\/name>/g)];\n    const yearMatch = entry.match(/<published>(\\d{4})/);\n    const doiMatch = entry.match(/arxiv\\.org\\/abs\\/(.*?)(?:<|\"| )/);\n    const title = titleMatch ? cleanText(titleMatch[1]) : '';\n    if (!title || seenTitles.has(title.toLowerCase())) return;\n    seenTitles.add(title.toLowerCase());\n    normalizedPapers.push({\n      id: generateId(),\n      title: title,\n      authors: authorsMatches.map(m => m[1].trim()).join(', '),\n      year: yearMatch ? yearMatch[1] : 'N/A',\n      abstract: abstractMatch ? cleanText(abstractMatch[1]) : 'Abstract not available',\n      doi: doiMatch ? 'arxiv:' + doiMatch[1] : '',\n      citations: 0,\n      journal: 'arXiv preprint',\n      source: 'ArXiv',\n      fields: '',\n      pdf_url: ''\n    });\n  });\n} catch(e) { console.log('ArXiv error:', e.message); }\n\n// Process CrossRef results\ntry {\n  const cr = $('CrossRef Search').first().json;\n  const crPapers = cr.message?.items || [];\n  crPapers.forEach(paper => {\n    const title = cleanText(Array.isArray(paper.title) ? paper.title[0] : paper.title);\n    const doi = paper.DOI;\n    if (!title || seenTitles.has(title.toLowerCase())) return;\n    if (doi && seenDois.has(doi)) return;\n    seenTitles.add(title.toLowerCase());\n    if (doi) seenDois.add(doi);\n    const authors = (paper.author || []).map(a => {\n      const name = [a.given, a.family].filter(Boolean).join(' ');\n      return name;\n    }).join(', ');\n    normalizedPapers.push({\n      id: generateId(),\n      title: title,\n      authors: authors,\n      year: paper.published?.['date-parts']?.[0]?.[0] || paper['published-print']?.['date-parts']?.[0]?.[0] || 'N/A',\n      abstract: cleanText(paper.abstract?.replace(/<[^>]+>/g, '')) || 'Abstract not available',\n      doi: doi || '',\n      citations: paper['is-referenced-by-count'] || 0,\n      journal: paper['container-title']?.[0] || paper.publisher || '',\n      source: 'CrossRef',\n      fields: (paper.subject || []).join(', '),\n      pdf_url: ''\n    });\n  });\n} catch(e) { console.log('CrossRef error:', e.message); }\n\n// Process OpenAlex results\ntry {\n  const oa = $('OpenAlex Search').first().json;\n  const oaPapers = oa.results || [];\n  oaPapers.forEach(paper => {\n    const title = cleanText(paper.title);\n    const doi = paper.doi?.replace('https://doi.org/', '');\n    if (!title || seenTitles.has(title.toLowerCase())) return;\n    if (doi && seenDois.has(doi)) return;\n    seenTitles.add(title.toLowerCase());\n    if (doi) seenDois.add(doi);\n    // Reconstruct abstract from inverted index\n    let abstract = 'Abstract not available';\n    if (paper.abstract_inverted_index) {\n      const words = {};\n      Object.entries(paper.abstract_inverted_index).forEach(([word, positions]) => {\n        positions.forEach(pos => { words[pos] = word; });\n      });\n      abstract = Object.keys(words).sort((a,b) => Number(a)-Number(b)).map(k => words[k]).join(' ');\n    }\n    normalizedPapers.push({\n      id: generateId(),\n      title: title,\n      authors: (paper.authorships || []).map(a => a.author?.display_name).filter(Boolean).join(', '),\n      year: paper.publication_year || 'N/A',\n      abstract: cleanText(abstract),\n      doi: doi || '',\n      citations: paper.cited_by_count || 0,\n      journal: paper.primary_location?.source?.display_name || '',\n      source: 'OpenAlex',\n      fields: (paper.concepts || []).slice(0, 3).map(c => c.display_name).join(', '),\n      pdf_url: ''\n    });\n  });\n} catch(e) { console.log('OpenAlex error:', e.message); }\n\n// Sort by citation count descending, then by year\nnormalizedPapers.sort((a, b) => {\n  if (b.citations !== a.citations) return b.citations - a.citations;\n  return (Number(b.year) || 0) - (Number(a.year) || 0);\n});\n\n// Keep top 30 most relevant papers\nconst topPapers = normalizedPapers.slice(0, 30);\n\nconst queryData = $('Parse Query Output').first().json;\n\nreturn {\n  json: {\n    papers: topPapers,\n    total_found: normalizedPapers.length,\n    total_used: topPapers.length,\n    topic: queryData.main_topic,\n    keywords: queryData.keywords,\n    sub_topics: queryData.sub_topics,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "a147792a-bf73-4c4e-8762-8d77593a596b",
+      "name": "Aggregate & Deduplicate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "papers",
+        "options": {}
+      },
+      "id": "59ec4bfe-b1e0-4526-8633-c5ad87e4421f",
+      "name": "Split Papers for Processing",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop through every item entering the node to preserve all 30 elements\nreturn $input.all().map((item, index) => {\n  const analysisResponse = item.json;\n  \n  // Safely grab the matching metadata item by its index in the array stream\n  let paperData = {};\n  try {\n    paperData = $('Split Papers for Processing').all()[index]?.json || {};\n  } catch (err) {\n    paperData = {};\n  }\n\n  let analysis = {};\n  try {\n    const content = analysisResponse.choices?.[0]?.message?.content || '{}';\n    const jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      analysis = JSON.parse(jsonMatch[0]);\n    } else {\n      throw new Error(\"No JSON bracket match found\");\n    }\n  } catch(e) {\n    // Elegant fallback schema if parsing fails\n    analysis = {\n      methodology: 'Not extractable',\n      key_contributions: ['Contribution 1', 'Contribution 2', 'Contribution 3'],\n      research_gaps: ['Gap identified in abstract', 'Future work mentioned'],\n      datasets_used: [],\n      evaluation_metrics: [],\n      innovation_score: 5,\n      relevance_to_topic: 'Relevant',\n      paper_category: 'Methodological',\n      limitations: 'See paper for details'\n    };\n  }\n\n  // Return the cleanly mapped combined object\n  return {\n    json: {\n      ...paperData,\n      analysis: analysis,\n      processed: true\n    }\n  };\n});"
+      },
+      "id": "13fb54e3-2684-4ca9-beea-18b16c351fc5",
+      "name": "Merge Paper + Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1888,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "d461f1c1-ac5d-4e16-95a8-524560096bb2",
+      "name": "Collect All Analyzed Papers",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assemble all data for PDF generation\nconst rawPapers = $('Collect All Analyzed Papers').first().json.data || [];\nconst allPapers = rawPapers.sort((a, b) => (b.year || 0) - (a.year || 0));\n\nconst topicData = $('Aggregate & Deduplicate Results').first().json;\n\n// Parse AI Outputs\nlet reviewContent = {};\ntry {\n  const rmResponse = $('Research Manager Agent').first().json;\n  const rmContent = rmResponse.choices?.[0]?.message?.content || '{}';\n  const jsonMatch = rmContent.match(/\\{[\\s\\S]*\\}/);\n  reviewContent = jsonMatch ? JSON.parse(jsonMatch[0]) : {};\n} catch(e) {}\n\nlet citationData = { formatted_references: [] };\ntry {\n  const cmResponse = $('Citation Manager').first().json;\n  const cmContent = cmResponse.choices?.[0]?.message?.content || '{}';\n  const jsonMatch = cmContent.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) citationData = JSON.parse(jsonMatch[0]);\n} catch(e) {}\n\nlet matrixData = { matrix_rows: [] };\ntry {\n  const mbResponse = $('Literature Matrix Builder').first().json;\n  const mbContent = mbResponse.choices?.[0]?.message?.content || '{}';\n  const jsonMatch = mbContent.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) matrixData = JSON.parse(jsonMatch[0]);\n} catch(e) {}\n\n// Force sync: Create clean citations directly from the sorted papers array\nconst syncedCitations = allPapers.map((p, i) => {\n    // Try to find if the citation manager produced a high-quality format\n    const existing = citationData.formatted_references?.find(r => \n        (typeof r === 'string' && r.toLowerCase().includes(p.title.substring(0, 20).toLowerCase())) ||\n        (typeof r === 'object' && r.title?.toLowerCase().includes(p.title.substring(0, 20).toLowerCase()))\n    );\n\n    const text = existing ? (typeof existing === 'object' ? existing.ieee_citation : existing) \n                          : `[${i + 1}] ${p.authors || 'Unknown'}, \"${p.title},\" ${p.journal || 'Proc. Conf.'}, ${p.year}. doi: ${p.doi || 'N/A'}`;\n    \n    return { index: i + 1, ieee_citation: text, title: p.title };\n});\n\nreturn {\n  json: {\n    topic: topicData.topic,\n    papers: allPapers,\n    review_content: reviewContent,\n    citations: syncedCitations, // This is now 100% synced and sorted\n    matrix: matrixData,\n    generated_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "afe6d4a4-33fc-4419-9c2b-b69278f3a2bf",
+      "name": "Assemble Complete Review Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2864,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate complete HTML for PDF conversion\nconst data = $input.first().json;\nconst topic = data.topic || 'Research Topic';\nconst review = data.review_content || {};\nconst papers = data.papers || [];\nconst citations = data.citations || [];\nconst matrix = data.matrix || {};\n\n// Helper: sanitize text safely for standard HTML rendering\nfunction esc(str) {\n  if (!str) return '';\n  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');\n}\n\n// Generate author lists matching standard IEEE format (Initials. Lastname)\nfunction formatAuthorIEEE(authorStr) {\n  if (!authorStr) return 'Unknown';\n  const authors = authorStr.split(',');\n  const processed = authors.slice(0, 3).map(a => {\n    const parts = a.trim().split(/\\s+/);\n    if (parts.length >= 2) {\n      const last = parts[parts.length - 1];\n      const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join(' ');\n      return `${initials} ${last}`;\n    }\n    return a.trim();\n  });\n  \n  if (authors.length > 3) {\n    return processed.join(', ') + ' et al.';\n  }\n  return processed.join(', ');\n}\n\n// Generate literature review matrix HTML table dynamically\nfunction generateMatrixHTML() {\n  const headers = ['Ref', 'Year', 'Title', 'Methodology', 'Datasets Used', 'Category', 'Score', 'Citations', 'Source'];\n  const headerHTML = headers.map(h => `<th>${esc(h)}</th>`).join('');\n  \n  const rowsHTML = papers.map((p, i) => {\n    const analysis = p.analysis || {};\n    \n    // Safely parse array fields to comma-separated text strings\n    const datasetStr = Array.isArray(analysis.datasets_used) ? analysis.datasets_used.join(', ') : (analysis.datasets_used || 'N/A');\n    const categoryStr = Array.isArray(analysis.paper_category) ? analysis.paper_category.join(', ') : (analysis.paper_category || 'N/A');\n    const scoreVal = analysis.innovation_score !== undefined ? analysis.innovation_score : 'N/A';\n\n    return `<tr>\n      <td><strong>[${i+1}]</strong></td>\n      <td>${esc(p.year)}</td>\n      <td class=\"title-cell\"><strong>${esc(p.title)}</strong></td>\n      <td>${esc(analysis.methodology || 'N/A')}</td>\n      <td>${esc(datasetStr)}</td>\n      <td>${esc(categoryStr)}</td>\n      <td><span class=\"score-badge\">${esc(scoreVal)}/10</span></td>\n      <td>${esc(p.citations || '0')}</td>\n      <td><em>${esc(p.source || 'Unknown')}</em></td>\n    </tr>`;\n  }).join('');\n\n  return `<table class=\"matrix-table\"><thead><tr>${headerHTML}</tr></thead><tbody>${rowsHTML}</tbody></table>`;\n}\n\n// FIXED: Generate citation list HTML with proper sequential numbering\nfunction generateCitationsHTML() {\n  // If we have a citations array, process it with sequential numbering\n  if (Array.isArray(citations) && citations.length > 0) {\n    return citations.map((c, idx) => {\n      const citationString = (typeof c === 'object' && c !== null) ? (c.ieee_citation || c.text || '') : c;\n      // Extract the citation number if it exists in the string (like [1] at beginning)\n      let cleanCitation = citationString;\n      // Remove any existing [number] at the start of the citation\n      cleanCitation = cleanCitation.replace(/^\\[\\d+\\]\\s*/, '');\n      return `<p class=\"reference\">[${idx + 1}] ${esc(cleanCitation)}</p>`;\n    }).join('');\n  }\n  \n  // Fallback path: generate from papers with sequential numbering\n  return papers.map((p, i) => {\n    const authFmt = formatAuthorIEEE(p.authors);\n    return `<p class=\"reference\">[${i+1}] ${esc(authFmt)}, &ldquo;${esc(p.title)},&rdquo; <em>${esc(p.journal || 'Conference/Journal')}</em>, vol. ${i+1}, ${esc(String(p.year))}.${p.doi ? ' doi: ' + esc(p.doi) : ''}</p>`;\n  }).join('');\n}\n\n// Generate dynamic thematic sections HTML\nfunction generateSectionsHTML() {\n  const sections = review.thematic_sections || [];\n  if (sections.length === 0) {\n    return `<h2>III. LITERATURE REVIEW</h2><p>Based on the analysis of ${papers.length} papers across the domain of ${esc(topic)}, this section presents the key findings and methodological approaches.</p>`;\n  }\n  return sections.map((sec, idx) => {\n    const romanNum = ['III', 'IV', 'V', 'VI', 'VII', 'VIII'][idx] || `${idx + 3}`;\n    return `<h2>${romanNum}. ${esc(sec.title?.toUpperCase() || 'SECTION')}</h2><p>${esc(sec.content || '')}</p>`;\n  }).join('');\n}\n\n// Generate taxonomy and classification listings HTML\nfunction generateTaxonomyHTML() {\n  const taxonomy = review.taxonomy || {};\n  if (!taxonomy.categories) return '';\n  const cats = taxonomy.categories.map(cat => {\n    const papersList = Array.isArray(cat.papers) ? cat.papers.join(', ') : '';\n    return `<li><strong>${esc(cat.name)}:</strong> ${esc(cat.description)} ${papersList ? '— <em>Mapped Nodes: ' + esc(papersList) + '</em>' : ''}</li>`;\n  }).join('');\n  return `<h2>IV. TAXONOMY AND CLASSIFICATION</h2><p>${esc(taxonomy.description || '')}</p><ul>${cats}</ul>`;\n}\n\n// Extract global years parameters for display metric bounds\nconst structuralYears = papers.map(p => parseInt(p.year)).filter(y => !isNaN(y));\nconst minYear = structuralYears.length > 0 ? Math.min(...structuralYears) : 2018;\nconst maxYear = structuralYears.length > 0 ? Math.max(...structuralYears) : 2026;\n\n// Build final system HTML payload template string\nconst html = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n  body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; line-height: 1.4; color: #000; background: #fff; }\n  .page { max-width: 210mm; margin: 0 auto; padding: 18mm 15mm; }\n  .two-col { column-count: 2; column-gap: 6mm; }\n  .full-width { column-span: all; }\n  h1.title { font-size: 17pt; font-weight: bold; text-align: center; margin-bottom: 6pt; text-transform: uppercase; }\n  .authors-block { text-align: center; font-size: 9.5pt; margin-bottom: 12pt; line-height: 1.3; }\n  .abstract-box { border-top: 1pt solid #000; border-bottom: 1pt solid #000; padding: 8pt 4pt; margin: 8pt 0 12pt 0; }\n  .abstract-box .abstract-title { font-weight: bold; }\n  h2 { font-size: 10pt; font-weight: bold; text-align: center; font-variant: small-caps; margin: 10pt 0 6pt; border-bottom: 0.5pt solid #000; padding-bottom: 1pt; letter-spacing: 0.5px; }\n  p { text-align: justify; margin-bottom: 6pt; text-indent: 1.5em; }\n  p.reference { text-indent: -2em; padding-left: 2em; margin-bottom: 5pt; text-align: left; font-size: 8.5pt; line-height: 1.25; }\n  ul { padding-left: 14pt; margin-bottom: 6pt; }\n  li { margin-bottom: 3pt; text-align: justify; }\n  .page-header { text-align: justify; font-size: 7.5pt; color: #555; border-bottom: 0.5pt solid #aaa; margin-bottom: 12pt; padding-bottom: 2pt; font-family: Arial, sans-serif; }\n  .matrix-section { page-break-before: always; }\n  .matrix-table { width: 100%; border-collapse: collapse; font-size: 7.5pt; margin: 10pt 0; }\n  .matrix-table th { background: #1a1a2e; color: #fff; padding: 5pt 4pt; text-align: left; border: 0.5pt solid #222; font-weight: bold; }\n  .matrix-table td { padding: 5pt 4pt; border: 0.5pt solid #bbb; vertical-align: top; line-height: 1.25; }\n  .matrix-table td.title-cell { font-size: 7.5pt; color: #111; }\n  .matrix-table tr:nth-child(even) { background: #fcfcfc; }\n  .gap-box { background: #fffde7; border-left: 2.5pt solid #f44336; padding: 6pt; margin: 6pt 0; }\n  .future-box { background: #f1f8e9; border-left: 2.5pt solid #4caf50; padding: 6pt; margin: 6pt 0; }\n  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10pt; margin: 10pt 0 4pt 0; }\n  .stat-box { background: #f9fbfd; border: 0.5pt solid #b0bec5; padding: 8pt 4pt; text-align: center; border-radius: 2pt; }\n  .stat-number { font-size: 15pt; font-weight: bold; color: #1a1a2e; }\n  .stat-label { font-size: 7.5pt; color: #555; text-transform: uppercase; margin-top: 2pt; font-family: Arial, sans-serif; }\n  .keywords-box { margin-top: 6pt; font-size: 8.5pt; font-style: italic; }\n  .score-badge { display: inline-block; background: #e0f2f1; color: #004d40; padding: 1pt 3pt; border-radius: 2pt; font-weight: bold; font-size: 7pt; }\n</style>\n</head>\n<body>\n<div class=\"page\">\n\n  <div class=\"page-header\">\n    IEEE TRANSACTIONS ON KNOWLEDGE AND DATA ENGINEERING, VOL. 38, NO. 6, JUNE 2026\n  </div>\n\n  <div class=\"full-width\">\n    <h1 class=\"title\">${esc(topic)}</h1>\n    <div class=\"authors-block\">\n      <strong>Systematic Literature Review Matrix & Synthesized Survey Documentation</strong><br>\n      <span>Academic Analytics Engine Pipeline | Framework Scope Bounds: ${minYear} &ndash; ${maxYear}</span>\n    </div>\n\n    <div class=\"abstract-box\">\n      <p style=\"text-indent:0;\"><span class=\"abstract-title\">Abstract</span> &mdash; ${esc(review.executive_summary || `This survey delivers an engineering-grade roadmap assessing ${papers.length} publications tracking ${topic}.`)}</p>\n      <div class=\"keywords-box\">\n        <strong>Index Terms</strong> &mdash; ${esc((data.keywords || []).join(', ')) || esc(topic)}\n      </div>\n    </div>\n\n    <div class=\"stats-grid\">\n      <div class=\"stat-box\"><div class=\"stat-number\">${papers.length}</div><div class=\"stat-label\">Nodes Evaluated</div></div>\n      <div class=\"stat-box\"><div class=\"stat-number\">${maxYear - minYear + 1}</div><div class=\"stat-label\">Years Span</div></div>\n      <div class=\"stat-box\"><div class=\"stat-number\">${new Set(papers.map(p => p.source)).size}</div><div class=\"stat-label\">Data Providers</div></div>\n      <div class=\"stat-box\"><div class=\"stat-number\">${Math.round(papers.reduce((sum, p) => sum + (p.citations || 0), 0) / Math.max(papers.length, 1))}</div><div class=\"stat-label\">Mean Citations</div></div>\n    </div>\n  </div>\n\n  <div class=\"two-col\">\n\n    <h2>I. INTRODUCTION</h2>\n    <p>${esc(review.introduction || 'Introduction structural placeholder text.')}</p>\n\n    <h2>II. BACKGROUND AND SYSTEM BOUNDS</h2>\n    <p>${esc(review.background || 'Background structural placeholder text.')}</p>\n\n    ${generateSectionsHTML()}\n\n    ${generateTaxonomyHTML()}\n\n    <h2>SYSTEMMATIC METRIC COMPARISON</h2>\n    <p>${esc(review.comparison_analysis || 'Comparative tracking assessment context.')}</p>\n\n    <h2>CRITICAL RESEARCH GAPS</h2>\n    <div class=\"gap-box\">\n      ${\n        (Array.isArray(review.research_gaps) \n          ? review.research_gaps \n          : typeof review.research_gaps === 'string' \n            ? review.research_gaps.split('\\n') \n            : ['No explicitly stated research gaps provided in input payload.']\n        ).map(g => g.trim() ? `<p style=\"text-indent:0; margin-bottom:3pt;\"><strong>&bull;</strong> ${esc(g)}</p>` : '').join('')\n      }\n    </div>\n\n    <h2>FUTURE PARADIGM DIRECTIONS</h2>\n    <div class=\"future-box\">\n      ${(review.future_directions || []).map(d => `<p style=\"text-indent:0; margin-bottom:3pt;\"><strong>&rarr;</strong> ${esc(d)}</p>`).join('')}\n    </div>\n\n    <h2>CONCLUSION</h2>\n    <p>${esc(review.conclusion || 'Concluding remarks summary context.')}</p>\n\n    <h2>REFERENCES</h2>\n    <div style=\"margin-top:4pt;\">\n      ${generateCitationsHTML()}\n    </div>\n\n  </div>\n</div>\n\n<div class=\"page matrix-section\">\n  <div class=\"page-header\">SURVEY MATRIX METRIC ENGINE RUN TRACKER</div>\n  <h2 style=\"font-size:12pt; margin-bottom:4pt; text-align:left; border:none; font-variant:normal;\">APPENDIX: LITERATURE COMPILATION MATRIX</h2>\n  <p style=\"font-size:8.5pt; text-indent:0; margin-bottom:8pt; color:#444;\">Comprehensive analytical logging array containing architectural attributes across all ${papers.length} processed components.</p>\n  \n  ${generateMatrixHTML()}\n</div>\n\n</body>\n</html>`;\n\nreturn {\n  json: {\n    html_content: html,\n    topic: data.topic,\n    total_papers: papers.length,\n    generated_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "29ef5649-31d2-495c-a1be-2e71eeb1e8b3",
+      "name": "Generate HTML Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "openrouter/free",
+          "mode": "list",
+          "cachedResultName": "openrouter/free"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        432
+      ],
+      "id": "60d01f6a-16d1-4d0a-8e9f-07733334ff13",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "7NAeONPL992FkwEZ",
+          "name": "OpenAI account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GEMINI_API_KEY || $env.OPENAI_API_KEY || \"your_api_key_here\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n(function() {\n  const dataset = ($('Collect All Analyzed Papers').first().json.data || []).slice(0, 15).map((p, i) => ({\n    index: i + 1,\n    title: p.title || 'Unknown Title',\n    authors: p.authors || 'Unknown Authors',\n    year: p.year || 'N/A',\n    journal: p.journal || 'Unknown Venue',\n    doi: p.doi || ''\n  }));\n\n  const userInstruction = \"Format these papers as IEEE references and generate citation data. Adhere strictly to standard IEEE formatting guidelines.\\n\\nPapers data:\\n\" + JSON.stringify(dataset) + \"\\n\\nCRITICAL TOKEN-SAVING INSTRUCTION: If a paper has multiple authors, truncate the author lists in BOTH the ieee_citation string and the bibtex_entries author string to just the first author followed by et al. Do not list out all the authors. Output a clean, valid JSON object containing a \\\"formatted_references\\\" array and a \\\"bibtex_entries\\\" array, properly closing all structural JSON brackets at the end.\";\n\n  return {\n    \"model\": \"gemini-2.5-flash-lite\",\n    \"max_tokens\": 4096,\n    \"temperature\": 0.3, \n    \"messages\": [\n      {\n        \"role\": \"system\",\n        \"content\": \"You are an expert IEEE citation formatter and academic writing assistant. Format references in IEEE style and generate bibliographic data. Output ONLY valid JSON.\"\n      },\n      {\n        \"role\": \"user\",\n        \"content\": userInstruction\n      }\n    ]\n  };\n})()\n}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "dd700107-cc20-4180-b85a-3275791bed18",
+      "name": "Citation Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        240
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GROQ_API_KEY || \"your_api_key_here\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n{\n  \"model\": \"meta-llama/llama-4-scout-17b-16e-instruct\",\n  \"max_tokens\": 4096,\n  \"temperature\": 0.4,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert academic research manager and scientific writer. You write in the style of top-tier IEEE journal papers. Output ONLY valid JSON.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": `Based on these analyzed papers, synthesize a comprehensive literature review. \n\nResearch Topic: ${$('Aggregate & Deduplicate Results').first().json.topic || 'Explainable Artificial Intelligence (XAI) in Healthcare'}\n\nPapers (JSON): ${JSON.stringify(\n    (($input.all() || []).slice(0, 25).map(item => {\n      const p = item.json;\n      return {\n        title: p.title || 'Unknown Title',\n        authors: p.authors || 'Unknown Authors',\n        year: p.year || 'N/A',\n        abstract: (p.abstract || '').substring(0, 250),\n        analysis: p.analysis || {},\n        citations: p.citations || 0,\n        journal: p.journal || 'Unknown'\n      };\n    }))\n)}\n\nOutput a JSON object with these EXACT keys:\n{\n  \"executive_summary\": \"2-3 paragraph overview of the field\",\n  \"introduction\": \"Comprehensive introduction section (approx 400 words) outlining research motivation, scope, and survey contributions\",\n  \"background\": \"Background and fundamentals section (approx 300 words)\",\n  \"taxonomy\": {\"description\": \"classification scheme description\", \"categories\": [{\"name\": \"cat\", \"description\": \"desc\", \"papers\": [\"paper title 1\"]}]},\n  \"thematic_sections\": [{\"title\": \"section title\", \"content\": \"detailed section analysis matching the provided dataset\", \"key_papers\": [\"paper title\"]}],\n  \"comparison_analysis\": \"Comparative analysis of synthesised approaches\",\n  \"research_gaps\": [\"gap 1\", \"gap 2\", \"gap 3\", \"gap 4\", \"gap 5\"],\n  \"future_directions\": [\"direction 1\", \"direction 2\", \"direction 3\"],\n  \"conclusion\": \"Comprehensive concluding remarks summarizing findings\",\n  \"total_papers_surveyed\": ${$input.all().length},\n  \"year_range\": \"2020-2026\"\n}`\n    }\n  ]\n}\n}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "9468b30e-29ee-432e-9d59-8a0927a9dfbc",
+      "name": "Research Manager Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2272,
+        352
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENROUTER_API_KEY || \"your_api_key_here\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n{\n  \"model\": \"openrouter/free\",\n  \"max_tokens\": 4096,\n  \"temperature\": 0.2,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a systematic literature review specialist. Output your analysis ONLY as a raw, single valid JSON object matching the exact schema requested by the user. Do not wrap the JSON output in markdown backticks or triple backticks. Start with { and end with }.The output must be concise\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a comprehensive literature review matrix for this provided papers dataset.\\n\\nPapers data: \" + \n      JSON.stringify(\n        (($('Collect All Analyzed Papers').first().json.data || []).slice(0, 15).map((p, i) => ({\n          ref: \"[\" + (i + 1) + \"]\",\n          title: p.title || \"Unknown Title\",\n          authors: p.authors || \"Unknown Authors\",\n          year: p.year || \"N/A\",\n          journal: p.journal || \"Unknown Venue\",\n          citations: p.citations || 0\n        })))\n      ) + \n      \"\\n\\nOutput a valid JSON object containing these exact top-level keys: matrix_headers, matrix_rows, thematic_groupings, temporal_distribution, methodology_distribution, and research_gaps_matrix. In the matrix_rows, include fields for ref, authors, year, title_short, method, dataset, key_metric, category, innovation_score, limitations, and citations. Ensure all JSON brackets are perfectly closed at the end.\"\n    }\n  ]\n}\n}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "7b4c4576-2f80-4702-a380-bdc2c7ed2461",
+      "name": "Literature Matrix Builder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        464
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appM5EgTQe9Hr3xz4",
+          "mode": "list",
+          "cachedResultName": "Literature Survey System",
+          "cachedResultUrl": "https://airtable.com/appM5EgTQe9Hr3xz4"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbllj5SoTLDX90ini",
+          "mode": "list",
+          "cachedResultName": "LiteratureReviews",
+          "cachedResultUrl": "https://airtable.com/appM5EgTQe9Hr3xz4/tbllj5SoTLDX90ini"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Topic": "={{$json.topic}}",
+            "ResearchGaps": "={{$json.research_gaps}}",
+            "ReviewHTML": "={{ $json.html_content }}",
+            "References": "={{$json.references}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ReviewHTML",
+              "displayName": "ReviewHTML",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ResearchGaps",
+              "displayName": "ResearchGaps",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "References",
+              "displayName": "References",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "CreatedAt",
+              "displayName": "CreatedAt",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Generated",
+                  "value": "Generated"
+                },
+                {
+                  "name": "Processing",
+                  "value": "Processing"
+                },
+                {
+                  "name": "Failed",
+                  "value": "Failed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        3424,
+        496
+      ],
+      "id": "bc922f14-e30e-48aa-9b5d-1ef1a173d3c6",
+      "name": "Create a record 1",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "37WDOroaDLKeTyzm",
+          "name": "Airtable Personal Access Token account"
+        }
+      },
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1152,
+        320
+      ],
+      "id": "227a7679-172f-41b3-8aa0-60768484bf4e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENROUTER_API_KEY || \"your_api_key_here\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n(function() {\n  const dataset = ($('Collect All Analyzed Papers').first().json.data || []).slice(15, 30).map((p, i) => ({\n    index: i + 1,\n    title: p.title || 'Unknown Title',\n    authors: p.authors || 'Unknown Authors',\n    year: p.year || 'N/A',\n    journal: p.journal || 'Unknown Venue',\n    doi: p.doi || ''\n  }));\n\n  const userInstruction = \"Format these papers as IEEE references and generate citation data. Adhere strictly to standard IEEE formatting guidelines.\\n\\nPapers data:\\n\" + JSON.stringify(dataset) + \"\\n\\nCRITICAL TOKEN-SAVING INSTRUCTION: If a paper has multiple authors, truncate the author lists in BOTH the ieee_citation string and the bibtex_entries author string to just the first author followed by et al. Do not list out all the authors. Output a clean, valid JSON object containing a \\\"formatted_references\\\" array and a \\\"bibtex_entries\\\" array, properly closing all structural JSON brackets at the end.\";\n\n  return {\n    \"model\": \"openrouter/free\",\n    \"max_tokens\": 4096,\n    \"temperature\": 0.3, \n    \"messages\": [\n      {\n        \"role\": \"system\",\n        \"content\": \"You are an expert IEEE citation formatter and academic writing assistant. Format references in IEEE style and generate bibliographic data. Output ONLY valid JSON.\"\n      },\n      {\n        \"role\": \"user\",\n        \"content\": userInstruction\n      }\n    ]\n  };\n})()\n}}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 15
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "1c3de713-a129-486f-aa0c-1af073ee47a4",
+      "name": "Citation Manager1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        64
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GROQ_API_KEY || \"your_api_key_here\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n{\n  \"model\": \"meta-llama/llama-4-scout-17b-16e-instruct\",\n  \"max_tokens\": 4096,\n  \"temperature\": 0.2,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a systematic literature review specialist. Output your analysis ONLY as a raw, single valid JSON object matching the exact schema requested by the user. Do not wrap the JSON output in markdown backticks or triple backticks. Start with { and end with }.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a comprehensive literature review matrix for this provided papers dataset.\\n\\nPapers data: \" + \n      JSON.stringify(\n        (($('Collect All Analyzed Papers').first().json.data || []).slice(15, 30).map((p, i) => ({\n          ref: \"[\" + (i + 1) + \"]\",\n          title: p.title || \"Unknown Title\",\n          authors: p.authors || \"Unknown Authors\",\n          year: p.year || \"N/A\",\n          journal: p.journal || \"Unknown Venue\",\n          citations: p.citations || 0\n        })))\n      ) + \n      \"\\n\\nOutput a valid JSON object containing these exact top-level keys: matrix_headers, matrix_rows, thematic_groupings, temporal_distribution, methodology_distribution, and research_gaps_matrix. In the matrix_rows, include fields for ref, authors, year, title_short, method, dataset, key_metric, category, innovation_score, limitations, and citations. Ensure all JSON brackets are perfectly closed at the end.\"\n    }\n  ]\n}\n}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "7346658b-c4d5-46a6-8321-24b81c662531",
+      "name": "Literature Matrix Builder1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        688
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2704,
+        336
+      ],
+      "id": "898cd140-5441-4a8f-a43b-eba6196cabc0",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENROUTER_API_KEY || \"your_api_key_here\" }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ \n{\n  \"model\": \"openrouter/free\",\n  \"max_tokens\": 2048,\n  \"temperature\": 0.1,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert research paper analyst. Analyze academic papers and return ONLY valid JSON. If the provided abstract is missing or states it is not available, populate the JSON fields with 'Data not available' or empty arrays/zeros as appropriate. Do not return markdown, explanations, or code blocks.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": `Analyze the following research paper and return exactly this JSON structure:\n\n{\n  \"paper_category\": \"\",\n  \"research_problem\": \"\",\n  \"methodology\": \"\",\n  \"datasets_used\": [],\n  \"evaluation_metrics\": [],\n  \"key_findings\": [],\n  \"strengths\": [],\n  \"limitations\": [],\n  \"future_work\": [],\n  \"innovation_score\": 0,\n  \"summary\": \"\"\n}\n\nTitle: ${$json.title}\n\nAuthors: ${$json.authors}\n\nYear: ${$json.year}\n\nAbstract: ${($json.abstract && $json.abstract.trim().length > 25) ? $json.abstract : \"No abstract or content details were provided for this paper. Please return an empty schema matrix structure.\"}`\n    }\n  ]\n}\n}}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 4,
+              "batchInterval": 1500
+            }
+          },
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 180000
+        }
+      },
+      "id": "a6908438-3611-48e1-810e-d73b9f2462d3",
+      "name": "Paper Analyzer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1696,
+        352
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Access the first item from the input\nconst item = items[0].json;\n\n// Ensure html_content exists\nif (!item.html_content) {\n  throw new Error(\"No html_content found in the input data.\");\n}\n\nconst text = item.html_content;\nconst buffer = Buffer.from(text, 'utf8');\n\n// Construct the binary object\nconst binaryData = {\n  data: buffer.toString('base64'),\n  mimeType: 'text/html', // Changed to text/html for better compatibility\n  fileName: 'literature_review.html',\n};\n\n// Assign the binary data to the current item\nitems[0].binary = { data: binaryData };\n\nreturn items;"
+      },
+      "id": "0480a1fb-e5ae-4b1e-a416-3043b5202b26",
+      "name": "Convert HTML to File",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3440,
+        240
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "formTitle": "Topic",
+        "formDescription": "enter a research topic",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "topic"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        240
+      ],
+      "id": "a3edca30-d5e4-45dd-af44-eb1c36e17546",
+      "name": "On form submission",
+      "webhookId": "446c26d9-47b7-4072-a2fe-83c23a2864ce"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Query Refiner Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Query Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ArXiv Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CrossRef Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "PubMed Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "OpenAlex Search": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Parse Query Output": {
+      "main": [
+        [
+          {
+            "node": "ArXiv Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CrossRef Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PubMed Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OpenAlex Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate & Deduplicate Results": {
+      "main": [
+        [
+          {
+            "node": "Split Papers for Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Papers for Processing": {
+      "main": [
+        [
+          {
+            "node": "Paper Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Paper + Analysis": {
+      "main": [
+        [
+          {
+            "node": "Collect All Analyzed Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect All Analyzed Papers": {
+      "main": [
+        [
+          {
+            "node": "Research Manager Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Complete Review Data": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML Document": {
+      "main": [
+        [
+          {
+            "node": "Create a record 1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert HTML to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Query Refiner Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Citation Manager": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Research Manager Agent": {
+      "main": [
+        [
+          {
+            "node": "Citation Manager",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Literature Matrix Builder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Citation Manager1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Literature Matrix Builder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Literature Matrix Builder": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Create a record 1": {
+      "main": [
+        []
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate & Deduplicate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Assemble Complete Review Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Citation Manager1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Literature Matrix Builder1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Paper Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Merge Paper + Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to File": {
+      "main": [
+        []
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Query Refiner Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e19c190d-a02c-425a-b44e-8652932f29f9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd3614ee845ebb1d10b3276d474490ac14513a8f27df1fdc88eced0c6aa29f16"
+  },
+  "nodeGroups": [],
+  "id": "03WPDtfZr0MZGdtR",
+  "tags": [
+    {
+      "updatedAt": "2026-06-07T09:22:22.743Z",
+      "createdAt": "2026-06-07T09:22:22.743Z",
+      "id": "di3ITE8BKBS4PJHk",
+      "name": "Literature Survey"
+    },
+    {
+      "updatedAt": "2026-06-07T09:22:22.711Z",
+      "createdAt": "2026-06-07T09:22:22.711Z",
+      "id": "mcflwMMWW4Ypgs77",
+      "name": "Agentic AI"
+    }
+  ]
+}

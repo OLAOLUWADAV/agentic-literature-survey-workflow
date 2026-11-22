@@ -1,0 +1,22 @@
+FROM docker.n8n.io/n8nio/n8n:latest
+
+USER root
+
+# Install runner npm dependencies (googleapis etc.) before copying src
+COPY runner/package.json /home/node/runner/package.json
+RUN cd /home/node/runner && npm install --omit=dev
+
+# Copy runner source (node_modules stays from above install)
+COPY runner/ /home/node/runner/
+
+# Copy n8n workflows and entrypoint
+COPY workflows/ /workflows/
+COPY scripts/railway-entrypoint.sh /railway-entrypoint.sh
+
+RUN chmod +x /railway-entrypoint.sh && chown -R node:node /home/node/runner
+
+USER node
+
+EXPOSE 5678
+
+ENTRYPOINT ["/railway-entrypoint.sh"]

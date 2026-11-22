@@ -1,0 +1,28 @@
+{
+  "name": "agentic-literature-survey-runner",
+  "version": "1.0.0",
+  "description": "Standalone CLI & REST API engine for the Agentic Literature Survey Workflow",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node cli.js",
+    "survey": "node cli.js"
+  },
+  "keywords": [
+    "literature-survey",
+    "agentic-ai",
+    "academic-research",
+    "arxiv",
+    "crossref",
+    "pubmed",
+    "openalex"
+  ],
+  "author": "Nidhishree N",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
