@@ -1,6 +1,12 @@
-# Research Intelligence n8n
+# Agentic Literature Survey Workflow
 
-A self-hostable academic literature review automation system built on n8n. Searches five scholarly databases simultaneously, analyzes papers with any OpenAI-compatible LLM, and produces structured literature review reports in HTML, Markdown, and JSON formats.
+> Self-hostable academic literature review automation powered by n8n.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![n8n](https://img.shields.io/badge/built%20with-n8n-orange)](https://n8n.io)
+[![Docker](https://img.shields.io/badge/docker-compose-blue)](docker-compose.yml)
+
+Searches five scholarly databases simultaneously, scores and deduplicates papers, runs AI-assisted analysis, then generates a **full structured literature review** — with inline citation markers, 5 bibliometric charts, and an optional chapter layout — in HTML, Markdown, and JSON.
 
 **No paid dependencies.** No Airtable, no mandatory API subscriptions. Free academic APIs + your choice of free or paid LLM.
 
@@ -10,10 +16,10 @@ A self-hostable academic literature review automation system built on n8n. Searc
 
 1. **Multi-source retrieval** — Searches ArXiv, CrossRef, PubMed, OpenAlex, and Semantic Scholar in parallel. All five are free.
 2. **Deduplication** — Normalizes paper metadata across sources. Deduplicates by DOI first, then by normalized title.
-3. **AI-assisted analysis** — Sends each paper's abstract to your configured LLM. Extracts: research problem, methodology, key findings, strengths, limitations, innovation score.
-4. **Synthesis** — Generates thematic literature synthesis, identifies research gaps by category (empirical, theoretical, methodological, contextual, temporal), formats citations in your chosen style (APA 7, Harvard, IEEE, Chicago, Vancouver), and builds a structured literature matrix.
+3. **AI-assisted analysis** — Sends each paper's abstract to your LLM. Extracts: research problem, methodology, key findings, strengths, limitations, innovation score (0–10).
+4. **Synthesis** — Generates thematic literature synthesis, identifies research gaps by category (empirical, theoretical, methodological, contextual, temporal), and builds a structured literature matrix for up to 50 papers.
 5. **Human review gate** — Pauses the workflow. You review the draft and approve or reject before final reports are generated.
-6. **Report generation** — Saves HTML, Markdown, and JSON reports to your filesystem.
+6. **Report generation** — Full HTML report with inline `[N]` citation markers, 5 bibliometric SVG charts, optional chapter layout, evidence cards (Appendix B), and a 50-paper literature matrix (Appendix C). Also exports Markdown and JSON.
 
 ---
 
@@ -37,8 +43,8 @@ All providers use the same OpenAI-compatible endpoint pattern. Switch by changin
 **Prerequisites:** Docker Desktop
 
 ```bash
-git clone https://github.com/your-org/research-intelligence-n8n.git
-cd research-intelligence-n8n
+git clone https://github.com/OLAOLUWADAV/agentic-literature-survey-workflow.git
+cd agentic-literature-survey-workflow/Downloads/Agentic\ Reseacher/research-intelligence-n8n
 
 cp .env.example .env
 # Edit .env — set LLM_API_KEY, N8N_ENCRYPTION_KEY, N8N_BASIC_AUTH_PASSWORD
@@ -57,6 +63,38 @@ docker compose restart n8n
 ```
 
 Full installation guide: [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
+
+---
+
+## Report output
+
+The HTML report is self-contained — one file, no external dependencies — and includes:
+
+| Section | Description |
+|---------|-------------|
+| Executive summary | 3-paragraph synthesis with inline `[N]` citation links |
+| Introduction | ≥ 600 words, cited throughout |
+| Background | ≥ 500 words theoretical framework |
+| Thematic sections | ≥ 500 words each; consensus vs. contested findings |
+| Research gaps | 5 evidence-based gaps, traceable to specific papers |
+| Future directions | Grounded in identified gaps |
+| Appendix A: 5 bibliometric charts | Publications/year, sources, citation distribution, scatter, categories |
+| Appendix B: Evidence cards | One card per paper with anchor links from inline citations |
+| Appendix C: Literature matrix | Up to 50 papers with innovation scores, methodology and findings |
+
+**Report formats:** `Standard Summary` (single page) or `Full Report with Chapters` (numbered chapters, TOC, print page-breaks).
+
+### Bibliometric charts
+
+All five charts use a consistent report-style visual: open spine (left + bottom only), gradient bar fills, bold blue value labels, and faint grid lines.
+
+| Chart | Shows |
+|-------|-------|
+| Publications per year | Annual paper counts, navy→cobalt gradient bars |
+| Papers by database | Source distribution with count + % labels |
+| Citation distribution | Log-binned histogram, crimson→red gradient |
+| Citation vs. year scatter | Each paper as a dot; white ring separates overlaps |
+| Paper categories | Research-stream breakdown, 7-colour palette |
 
 ---
 
