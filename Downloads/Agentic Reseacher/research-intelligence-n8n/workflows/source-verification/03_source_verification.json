@@ -1,0 +1,162 @@
+{
+  "name": "Source Verification Sub-workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "workflowInputData"
+      },
+      "id": "sv-trigger-001",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "papers",
+        "options": {}
+      },
+      "id": "sv-split-001",
+      "name": "Split Papers",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const paper = $json;\nconst doi = (paper.doi || '').replace('https://doi.org/', '').replace('http://doi.org/', '').trim();\nconst hasRealDoi = doi && !doi.startsWith('arxiv:') && doi.length > 5;\n\nreturn {\n  json: {\n    ...paper,\n    doi_clean: doi,\n    has_doi: hasRealDoi,\n    verify_doi: hasRealDoi ? doi : null\n  }\n};"
+      },
+      "id": "sv-prep-001",
+      "name": "Prepare Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.has_doi }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "sv-hasdoi-001",
+      "name": "Has Real DOI?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "method": "HEAD",
+        "url": "=https://doi.org/{{ $json.doi_clean }}",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 10000,
+          "redirect": { "redirect": { "followRedirects": true, "maxRedirects": 5 } }
+        }
+      },
+      "id": "sv-doicheck-001",
+      "name": "DOI Resolution Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 160]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.crossref.org/works/{{ encodeURIComponent($json.doi_clean) }}?mailto={{ $env.CROSSREF_MAILTO || 'research@example.com' }}",
+        "options": {
+          "response": { "response": { "responseFormat": "json", "neverError": true } },
+          "timeout": 15000
+        }
+      },
+      "id": "sv-crossref-001",
+      "name": "CrossRef Metadata Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const paper = $('Prepare Verification').all().find(p => p.json.doi_clean === $('Has Real DOI?').first().json.doi_clean)?.json || $json;\nconst doiCheck = $('DOI Resolution Check').first();\nconst crossrefCheck = $('CrossRef Metadata Check').first().json;\n\nconst doiResolves = doiCheck?.json?.$response?.statusCode !== undefined\n  ? doiCheck.json.$response.statusCode < 400\n  : false;\n\nlet crossrefMatch = false;\nlet crossrefNotes = [];\nconst crWork = crossrefCheck.message;\nif (crWork) {\n  const crTitle = Array.isArray(crWork.title) ? crWork.title[0] : crWork.title || '';\n  const crTitleNorm = crTitle.toLowerCase().replace(/[^a-z0-9]/g, '');\n  const paperTitleNorm = (paper.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');\n  const similarity = crTitleNorm.length > 10 && paperTitleNorm.length > 10\n    ? (crTitleNorm.substring(0, 30) === paperTitleNorm.substring(0, 30))\n    : false;\n  crossrefMatch = similarity;\n  if (crWork.publisher) crossrefNotes.push('Publisher: ' + crWork.publisher);\n  if (crWork['is-referenced-by-count'] !== undefined) crossrefNotes.push('CrossRef citations: ' + crWork['is-referenced-by-count']);\n}\n\nconst verificationStatus = !paper.has_doi ? 'no_doi'\n  : (doiResolves && crossrefMatch) ? 'verified'\n  : (doiResolves && !crossrefMatch) ? 'doi_resolves'\n  : (!doiResolves && crossrefMatch) ? 'metadata_match'\n  : 'unresolved';\n\nreturn {\n  json: {\n    ...paper,\n    verification: {\n      status: verificationStatus,\n      doi_resolves: doiResolves,\n      crossref_match: crossrefMatch,\n      retraction_check: 'not_checked',\n      notes: crossrefNotes.join('; '),\n      verified_at: new Date().toISOString()\n    }\n  }\n};"
+      },
+      "id": "sv-merge-001",
+      "name": "Merge Verification Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const paper = $json;\nreturn {\n  json: {\n    ...paper,\n    verification: {\n      status: 'no_doi',\n      doi_resolves: false,\n      crossref_match: false,\n      retraction_check: 'not_applicable',\n      notes: 'No DOI available. Verification based on metadata only.',\n      verified_at: new Date().toISOString()\n    }\n  }\n};"
+      },
+      "id": "sv-nodoi-001",
+      "name": "Mark No DOI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 440]
+    },
+    {
+      "parameters": {
+        "numberInputs": 2
+      },
+      "id": "sv-finalmerge-001",
+      "name": "Combine All Verified",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1320, 320]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "sv-aggregate-001",
+      "name": "Collect Verified Papers",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [1540, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "const papers = $input.first().json.data || [];\nconst stats = {\n  total: papers.length,\n  verified: papers.filter(p => p.verification?.status === 'verified').length,\n  doi_resolves: papers.filter(p => p.verification?.status === 'doi_resolves').length,\n  no_doi: papers.filter(p => p.verification?.status === 'no_doi').length,\n  unresolved: papers.filter(p => p.verification?.status === 'unresolved').length\n};\nconsole.log('Verification complete:', JSON.stringify(stats));\nreturn {\n  json: {\n    papers: papers,\n    verification_stats: stats,\n    verified_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "sv-summary-001",
+      "name": "Verification Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 320]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": { "main": [[{ "node": "Split Papers", "type": "main", "index": 0 }]] },
+    "Split Papers": { "main": [[{ "node": "Prepare Verification", "type": "main", "index": 0 }]] },
+    "Prepare Verification": { "main": [[{ "node": "Has Real DOI?", "type": "main", "index": 0 }]] },
+    "Has Real DOI?": {
+      "main": [
+        [
+          { "node": "DOI Resolution Check", "type": "main", "index": 0 },
+          { "node": "CrossRef Metadata Check", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Mark No DOI", "type": "main", "index": 0 }]
+      ]
+    },
+    "DOI Resolution Check": { "main": [[{ "node": "Merge Verification Results", "type": "main", "index": 0 }]] },
+    "CrossRef Metadata Check": { "main": [] },
+    "Merge Verification Results": { "main": [[{ "node": "Combine All Verified", "type": "main", "index": 0 }]] },
+    "Mark No DOI": { "main": [[{ "node": "Combine All Verified", "type": "main", "index": 1 }]] },
+    "Combine All Verified": { "main": [[{ "node": "Collect Verified Papers", "type": "main", "index": 0 }]] },
+    "Collect Verified Papers": { "main": [[{ "node": "Verification Summary", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "id": "source-verification-v2",
+  "tags": [{ "name": "Research Intelligence" }, { "name": "Source Verification" }]
+}

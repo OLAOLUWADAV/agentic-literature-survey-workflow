@@ -1,0 +1,22 @@
+{
+  "_note": "SYNTHETIC fixture — this is a mock LLM API response for testing. Not a real OpenAI/OpenRouter response.",
+  "id": "chatcmpl-test-fixture-001",
+  "object": "chat.completion",
+  "created": 1700000000,
+  "model": "meta-llama/llama-3.2-3b-instruct:free",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"paper_id\":\"p_abc123def\",\"paper_category\":\"Empirical Study\",\"research_problem\":\"This paper addresses the lack of robust evaluation frameworks for assessing AI-generated content in academic settings, specifically the gap between automated metrics and human expert judgment.\",\"methodology\":\"Mixed-methods study combining quantitative analysis of automated metrics (BLEU, ROUGE, BERTScore) against human expert ratings on 500 AI-generated academic texts across five disciplines.\",\"datasets_used\":[\"ACAD-500 (novel dataset introduced in this paper)\",\"ArXiv-Abstracts-2023\"],\"evaluation_metrics\":[\"Pearson correlation with expert ratings\",\"Krippendorff alpha\",\"Precision/Recall at threshold\"],\"key_findings\":[\"Automated metrics correlate poorly with expert quality ratings (r=0.23 for BLEU, r=0.41 for BERTScore)\",\"Discipline-specific evaluation rubrics outperform generic metrics by 34%\",\"A proposed composite metric achieves r=0.78 correlation with expert consensus\",\"GPT-4 generated texts are rated significantly higher than smaller model outputs across all disciplines (p<0.001)\"],\"strengths\":[\"Large, multi-discipline dataset\",\"Rigorous human evaluation with inter-rater reliability checks\",\"Novel composite metric with open-source implementation\"],\"limitations\":[\"English-language texts only\",\"Expert raters drawn from US institutions only, limiting cultural generalisability\",\"Dataset not yet publicly released at time of publication\"],\"future_work\":[\"Extend evaluation to multilingual academic texts\",\"Investigate temporal drift in AI-generated academic writing\",\"Apply framework to peer review quality assessment\"],\"innovation_score\":7,\"relevance_score\":9,\"summary\":\"This empirical study systematically evaluates the adequacy of automated metrics for assessing AI-generated academic writing quality. The authors demonstrate significant limitations of existing metrics and propose a composite evaluation approach that substantially improves correlation with human expert judgment. The findings have direct implications for quality assurance in AI-assisted academic writing tools.\"}"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 847,
+    "completion_tokens": 342,
+    "total_tokens": 1189
+  }
+}

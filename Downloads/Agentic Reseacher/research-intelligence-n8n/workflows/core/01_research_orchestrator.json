@@ -1,0 +1,1517 @@
+{
+  "name": "Research Intelligence Orchestrator v2",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Academic Literature Review",
+        "formDescription": "Enter your research topic and preferences to generate a comprehensive literature review.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "topic",
+              "fieldType": "textarea",
+              "placeholder": "e.g. Machine learning methods for early detection of Alzheimer's disease",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "discipline",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Computer Science"
+                  },
+                  {
+                    "option": "Medicine & Health Sciences"
+                  },
+                  {
+                    "option": "Law"
+                  },
+                  {
+                    "option": "Architecture & Built Environment"
+                  },
+                  {
+                    "option": "Education"
+                  },
+                  {
+                    "option": "Social Sciences"
+                  },
+                  {
+                    "option": "Engineering"
+                  },
+                  {
+                    "option": "Natural Sciences"
+                  },
+                  {
+                    "option": "Humanities"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "research_depth",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Quick Survey (top 15 papers)"
+                  },
+                  {
+                    "option": "Standard Review (top 30 papers)"
+                  },
+                  {
+                    "option": "Deep Systematic (top 50 papers)"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "citation_format",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "APA 7"
+                  },
+                  {
+                    "option": "Harvard"
+                  },
+                  {
+                    "option": "IEEE"
+                  },
+                  {
+                    "option": "Chicago"
+                  },
+                  {
+                    "option": "Vancouver"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "date_from",
+              "placeholder": "2018",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "date_to",
+              "placeholder": "2026",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "language",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "English"
+                  },
+                  {
+                    "option": "Any language"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "recipient_email",
+              "fieldType": "text",
+              "placeholder": "you@email.com — your completed review will be delivered here",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "delivery_method",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Google Docs + Email Notification"
+                  },
+                  {
+                    "option": "Email (Full HTML Report)"
+                  },
+                  {
+                    "option": "Save to Server Only"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "report_format",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Standard Summary"
+                  },
+                  {
+                    "option": "Full Report with Chapters"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "On form submission",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "research-intake-form-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\n// Validate topic\nconst recipientEmail = (item.recipient_email || '').trim();\nconst deliveryMethod = item.delivery_method || 'Save to Server Only';\nif (recipientEmail && !/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(recipientEmail)) {\n  throw new Error('Invalid recipient email address: ' + recipientEmail);\n}\nconst topic = (item.topic || '').trim();\nif (!topic) throw new Error('Research topic is required.');\nif (topic.length < 10) throw new Error('Research topic must be at least 10 characters. Please be more specific.');\nif (topic.length > 500) throw new Error('Research topic is too long (max 500 characters).');\n\n// Generate a stable research ID\nconst researchId = 'ri_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);\n\n// Parse depth\nconst depthRaw = item.research_depth || 'Standard Review (top 30 papers)';\nlet maxPapers = 30;\nif (depthRaw.includes('15')) maxPapers = 15;\nelse if (depthRaw.includes('50')) maxPapers = 50;\n\n// Parse dates\nconst dateFrom = parseInt(item.date_from) || 2018;\nconst dateTo = parseInt(item.date_to) || 2026;\nif (dateFrom > dateTo) throw new Error('date_from must be earlier than date_to.');\n\nreturn {\n  json: {\n    research_id: researchId,\n    topic: topic,\n    discipline: item.discipline || 'Computer Science',\n    research_depth: depthRaw,\n    max_papers: maxPapers,\n    citation_format: item.citation_format || 'APA 7',\n    date_from: dateFrom,\n    date_to: dateTo,\n    language: item.language || 'English',\n    recipient_email: recipientEmail,\n    delivery_method: deliveryMethod,\n    report_format: item.report_format || 'Standard Summary',\n    started_at: new Date().toISOString(),\n    config: {\n      max_papers: maxPapers,\n      citation_format: item.citation_format || 'APA 7',\n      date_from: dateFrom,\n      date_to: dateTo,\n      discipline: item.discipline || 'Computer Science'\n    }\n  }\n};"
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Validate & Configure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_API_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LLM_API_KEY || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { var topic = $('Validate & Configure').first().json.topic; var disc = $('Validate & Configure').first().json.discipline; var dateFrom = $('Validate & Configure').first().json.date_from; var dateTo = $('Validate & Configure').first().json.date_to; var sysPrompt = 'You are an expert academic search strategist. Analyze the research topic and generate exactly 8 optimized search queries for academic databases. Output ONLY a valid JSON object — no markdown, no explanation, no preamble. Start with { and end with }.\\n\\nJSON schema:\\n{\\n  \"main_topic\": \"core research topic\",\\n  \"refined_queries\": [\"query0\",\"query1\",\"query2\",\"query3\",\"query4\",\"query5\",\"query6\",\"query7\"],\\n  \"keywords\": [\"kw1\",\"kw2\",\"kw3\",\"kw4\",\"kw5\"],\\n  \"sub_topics\": [\"sub1\",\"sub2\",\"sub3\"],\\n  \"exclusion_terms\": [\"excl1\",\"excl2\"],\\n  \"time_range\": \"' + dateFrom + '-' + dateTo + '\",\\n  \"expected_domains\": [\"domain1\",\"domain2\"]\\n}\\n\\nQuery index blueprint:\\n[0] Broad: core_term AND concept AND field\\n[1] Architecture A: core_term AND concept AND method_type_A\\n[2] Architecture B: core_term AND concept AND method_type_B\\n[3] Dataset focus: core_term AND concept AND benchmark\\n[4] Evaluation: core_term AND concept AND metric\\n[5] Application: core_term AND concept AND application_domain\\n[6] Recent trends: core_term AND concept AND SOTA_framework\\n[7] Narrow specialist: very_specific_micro_domain\\n\\nUse Boolean AND between terms. Quote multi-word phrases. NEVER include platform names (arxiv, pubmed, crossref, openalex, semantic scholar, ieee) in the queries.'; var userMsg = 'Research topic: ' + topic + '\\nDiscipline: ' + disc + '\\nTime range: ' + dateFrom + '-' + dateTo; return { 'model': ($env.LLM_MODEL || 'meta-llama/llama-3.2-3b-instruct:free'), 'max_tokens': parseInt($env.LLM_MAX_TOKENS || '2048'), 'temperature': parseFloat($env.LLM_TEMPERATURE || '0.3'), 'messages': [{ 'role': 'system', 'content': sysPrompt }, { 'role': 'user', 'content': userMsg }] }; })() }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Refine Research Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const llmResponse = $input.first().json;\nconst validateNode = $('Validate & Configure').first().json;\n\nlet parsedData;\ntry {\n  const content = llmResponse.choices?.[0]?.message?.content ||\n                  llmResponse.choices?.[0]?.text ||\n                  llmResponse.content ||\n                  '{}';\n  const contentStr = typeof content === 'string' ? content : JSON.stringify(content);\n  const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    parsedData = JSON.parse(jsonMatch[0]);\n  } else {\n    throw new Error('No JSON object found in LLM response');\n  }\n} catch (e) {\n  console.log('Query refinement LLM failed, using fallback:', e.message);\n  const t = validateNode.topic;\n  parsedData = {\n    main_topic: t,\n    refined_queries: [\n      '\"' + t + '\" AND \"research\"',\n      '\"' + t + '\" AND \"deep learning\"',\n      '\"' + t + '\" AND \"neural network\"',\n      '\"' + t + '\" AND \"survey\"',\n      '\"' + t + '\" AND \"systematic review\"',\n      '\"' + t + '\" AND \"applications\"',\n      '\"' + t + '\" AND \"benchmark\"',\n      t\n    ],\n    keywords: t.split(' ').slice(0, 5),\n    sub_topics: [t + ' methods', t + ' applications'],\n    exclusion_terms: [],\n    time_range: validateNode.date_from + '-' + validateNode.date_to,\n    expected_domains: [validateNode.discipline]\n  };\n}\n\n// Normalize alternative field names the LLM may return\nif (!parsedData.main_topic) {\n  parsedData.main_topic = parsedData.topic || validateNode.topic;\n}\nif (!Array.isArray(parsedData.refined_queries)) {\n  parsedData.refined_queries = parsedData.queries ||\n                               parsedData.search_queries ||\n                               parsedData.query_list ||\n                               [];\n}\nif (!Array.isArray(parsedData.keywords)) {\n  parsedData.keywords = parsedData.key_terms || parsedData.keyterms || [];\n}\n\n// Ensure we have at least 8 queries\nwhile (parsedData.refined_queries.length < 8) {\n  parsedData.refined_queries.push(parsedData.main_topic);\n}\n\nreturn {\n  json: {\n    ...parsedData,\n    research_id: validateNode.research_id,\n    topic: parsedData.main_topic || validateNode.topic,\n    config: validateNode.config,\n    discipline: validateNode.discipline,\n    max_papers: validateNode.max_papers,\n    citation_format: validateNode.citation_format,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "name": "Parse Query Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://export.arxiv.org/api/query?search_query=all:{{ encodeURIComponent($('Parse Query Output').first().json.refined_queries[0]) }}&start=0&max_results=15&sortBy=relevance&sortOrder=descending",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000,
+          "neverError": true
+        }
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+      "name": "ArXiv Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.crossref.org/works?query=' + encodeURIComponent($('Parse Query Output').first().json.refined_queries[2]) + '&rows=15&filter=from-pub-date:' + ($('Parse Query Output').first().json.time_range?.split('-')[0] || '2018') + '&sort=relevance&mailto=' + ($env.CROSSREF_MAILTO || 'research@example.com') }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 30000,
+          "neverError": true
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "CrossRef Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=' + encodeURIComponent($('Parse Query Output').first().json.refined_queries[3]) + '&retmax=12&retmode=json&sort=relevance' + ($env.NCBI_API_KEY ? '&api_key=' + $env.NCBI_API_KEY : '') }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 30000,
+          "neverError": true
+        }
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+      "name": "PubMed esearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=' + (($('PubMed esearch').first().json.esearchresult?.idlist || []).join(',')) + '&retmode=json' + ($env.NCBI_API_KEY ? '&api_key=' + $env.NCBI_API_KEY : '') }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 30000,
+          "neverError": true
+        }
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+      "name": "PubMed eSummary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1080,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.openalex.org/works?search=' + encodeURIComponent($('Parse Query Output').first().json.main_topic) + '&filter=publication_year:' + ($('Parse Query Output').first().json.time_range?.split('-')[0] || '2018') + '-' + ($('Parse Query Output').first().json.time_range?.split('-')[1] || '2026') + '&sort=cited_by_count:desc&per-page=15&select=id,title,authorships,publication_year,abstract_inverted_index,cited_by_count,doi,primary_location,concepts' }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 30000,
+          "neverError": true
+        }
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+      "name": "OpenAlex Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://api.semanticscholar.org/graph/v1/paper/search?query=' + encodeURIComponent($('Parse Query Output').first().json.refined_queries[1]) + '&fields=title,authors,year,abstract,externalIds,citationCount,journal,isOpenAccess,openAccessPdf&limit=15' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.SEMANTIC_SCHOLAR_API_KEY || '' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 30000,
+          "neverError": true
+        }
+      },
+      "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
+      "name": "Semantic Scholar Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "id": "e1f2a3b4-c5d6-7890-efab-901234567890",
+      "name": "Merge Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1300,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const normalizedPapers = [];\nconst seenDois = new Set();\nconst seenTitles = new Set();\n\nfunction cleanText(text) {\n  if (!text) return '';\n  return String(text).replace(/\\s+/g, ' ').trim();\n}\n\nfunction generateId() {\n  return 'p_' + Math.random().toString(36).substr(2, 9);\n}\n\nfunction normalizeTitle(t) {\n  return t.toLowerCase().replace(/[^a-z0-9]/g, '').substr(0, 60);\n}\n\nfunction addPaper(paper) {\n  if (!paper.title || paper.title.length < 5) return;\n  const nt = normalizeTitle(paper.title);\n  if (paper.doi && seenDois.has(paper.doi)) return;\n  if (seenTitles.has(nt)) return;\n  if (paper.doi) seenDois.add(paper.doi);\n  seenTitles.add(nt);\n  normalizedPapers.push(paper);\n}\n\n// --- ArXiv (XML) ---\ntry {\n  const arxivRaw = $('ArXiv Search').first().json.data || $('ArXiv Search').first().json || '';\n  const arxivText = typeof arxivRaw === 'string' ? arxivRaw : JSON.stringify(arxivRaw);\n  const entries = arxivText.split('<entry>').slice(1);\n  entries.forEach(entry => {\n    const titleM = entry.match(/<title>([\\s\\S]*?)<\\/title>/);\n    const abstractM = entry.match(/<summary>([\\s\\S]*?)<\\/summary>/);\n    const authorsM = [...entry.matchAll(/<name>([\\s\\S]*?)<\\/name>/g)];\n    const yearM = entry.match(/<published>(\\d{4})/);\n    const idM = entry.match(/<id>https?:\\/\\/arxiv\\.org\\/abs\\/([^<\\s]+)<\\/id>/);\n    const title = titleM ? cleanText(titleM[1]) : '';\n    if (!title) return;\n    addPaper({\n      id: generateId(),\n      title,\n      authors: authorsM.map(m => m[1].trim()).join(', '),\n      year: yearM ? yearM[1] : 'N/A',\n      abstract: abstractM ? cleanText(abstractM[1]) : 'Abstract not available',\n      doi: idM ? 'arxiv:' + idM[1] : '',\n      citations: 0,\n      journal: 'arXiv preprint',\n      source: 'ArXiv',\n      is_open_access: true,\n      pdf_url: idM ? 'https://arxiv.org/pdf/' + idM[1] : ''\n    });\n  });\n} catch(e) { console.log('ArXiv parse error:', e.message); }\n\n// --- CrossRef ---\ntry {\n  const cr = $('CrossRef Search').first().json;\n  (cr.message?.items || []).forEach(paper => {\n    const title = cleanText(Array.isArray(paper.title) ? paper.title[0] : paper.title);\n    const doi = paper.DOI;\n    if (!title) return;\n    const authors = (paper.author || []).map(a => [a.given, a.family].filter(Boolean).join(' ')).join(', ');\n    addPaper({\n      id: generateId(),\n      title,\n      authors,\n      year: paper.published?.['date-parts']?.[0]?.[0] || paper['published-print']?.['date-parts']?.[0]?.[0] || 'N/A',\n      abstract: cleanText((paper.abstract || '').replace(/<[^>]+>/g, '')) || 'Abstract not available',\n      doi: doi || '',\n      citations: paper['is-referenced-by-count'] || 0,\n      journal: paper['container-title']?.[0] || paper.publisher || '',\n      source: 'CrossRef',\n      is_open_access: false,\n      pdf_url: ''\n    });\n  });\n} catch(e) { console.log('CrossRef parse error:', e.message); }\n\n// --- PubMed eSummary ---\ntry {\n  const pm = $('PubMed eSummary').first().json;\n  const result = pm.result || {};\n  const uids = result.uids || [];\n  uids.forEach(uid => {\n    const p = result[uid];\n    if (!p) return;\n    const title = cleanText(p.title);\n    if (!title) return;\n    const authors = (p.authors || []).map(a => a.name).join(', ');\n    const doi = (p.articleids || []).find(x => x.idtype === 'doi')?.value || '';\n    addPaper({\n      id: generateId(),\n      title,\n      authors,\n      year: p.pubdate ? p.pubdate.substring(0, 4) : 'N/A',\n      abstract: 'Abstract not available via eSummary. See PubMed for full details.',\n      doi,\n      citations: 0,\n      journal: p.source || '',\n      source: 'PubMed',\n      is_open_access: false,\n      pdf_url: p.pmcid ? 'https://www.ncbi.nlm.nih.gov/pmc/articles/' + p.pmcid + '/pdf/' : ''\n    });\n  });\n} catch(e) { console.log('PubMed parse error:', e.message); }\n\n// --- OpenAlex ---\ntry {\n  const oa = $('OpenAlex Search').first().json;\n  (oa.results || []).forEach(paper => {\n    const title = cleanText(paper.title);\n    const doi = paper.doi?.replace('https://doi.org/', '');\n    if (!title) return;\n    let abstract = 'Abstract not available';\n    if (paper.abstract_inverted_index) {\n      const words = {};\n      Object.entries(paper.abstract_inverted_index).forEach(([word, positions]) => {\n        positions.forEach(pos => { words[pos] = word; });\n      });\n      abstract = Object.keys(words).sort((a, b) => Number(a) - Number(b)).map(k => words[k]).join(' ');\n    }\n    addPaper({\n      id: generateId(),\n      title,\n      authors: (paper.authorships || []).map(a => a.author?.display_name).filter(Boolean).join(', '),\n      year: paper.publication_year || 'N/A',\n      abstract: cleanText(abstract),\n      doi: doi || '',\n      citations: paper.cited_by_count || 0,\n      journal: paper.primary_location?.source?.display_name || '',\n      source: 'OpenAlex',\n      is_open_access: paper.primary_location?.is_oa || false,\n      pdf_url: paper.primary_location?.pdf_url || ''\n    });\n  });\n} catch(e) { console.log('OpenAlex parse error:', e.message); }\n\n// --- Semantic Scholar ---\ntry {\n  const ss = $('Semantic Scholar Search').first().json;\n  (ss.data || []).forEach(paper => {\n    const title = cleanText(paper.title);\n    const doi = paper.externalIds?.DOI || '';\n    if (!title) return;\n    addPaper({\n      id: generateId(),\n      title,\n      authors: (paper.authors || []).map(a => a.name).join(', '),\n      year: paper.year || 'N/A',\n      abstract: cleanText(paper.abstract) || 'Abstract not available',\n      doi,\n      citations: paper.citationCount || 0,\n      journal: paper.journal?.name || '',\n      source: 'Semantic Scholar',\n      is_open_access: paper.isOpenAccess || false,\n      pdf_url: paper.openAccessPdf?.url || ''\n    });\n  });\n} catch(e) { console.log('Semantic Scholar parse error:', e.message); }\n\n// Sort and limit\nnormalizedPapers.sort((a, b) => {\n  if (b.citations !== a.citations) return b.citations - a.citations;\n  return (Number(b.year) || 0) - (Number(a.year) || 0);\n});\n\nconst queryData = $('Parse Query Output').first().json;\nconst maxPapers = queryData.max_papers || 30;\nconst topPapers = normalizedPapers.slice(0, maxPapers);\n\nconst sourcesCovered = [...new Set(topPapers.map(p => p.source))];\n\nconsole.log('Aggregation complete:', normalizedPapers.length, 'unique papers found,', topPapers.length, 'selected from', sourcesCovered.join(', '));\n\nreturn {\n  json: {\n    papers: topPapers,\n    total_found: normalizedPapers.length,\n    total_used: topPapers.length,\n    topic: queryData.topic || queryData.main_topic,\n    keywords: queryData.keywords || [],\n    sub_topics: queryData.sub_topics || [],\n    research_id: queryData.research_id,\n    config: queryData.config,\n    citation_format: queryData.citation_format,\n    max_papers: maxPapers,\n    search_timestamp: new Date().toISOString(),\n    sources_queried: ['ArXiv', 'CrossRef', 'PubMed', 'OpenAlex', 'Semantic Scholar'],\n    sources_with_results: sourcesCovered\n  }\n};"
+      },
+      "id": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+      "name": "Aggregate & Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "papers",
+        "options": {}
+      },
+      "id": "a3b4c5d6-e7f8-9012-abcd-123456789012",
+      "name": "Split Papers for Processing",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_API_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LLM_API_KEY || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { var p = $json; var paperId = p.id || 'unknown'; var title = p.title || 'Unknown Title'; var authors = p.authors || 'Unknown Authors'; var year = p.year || 'N/A'; var abstract = (p.abstract && p.abstract.length > 20) ? p.abstract.substring(0, 600) : 'No abstract available'; var sysPrompt = 'You are an expert academic paper analyst. Extract structured information from paper metadata. CRITICAL: Include the exact paper_id value in your response. Output ONLY valid JSON — no markdown, no explanation. If information is unavailable, use empty arrays or null values. Never fabricate page numbers, quotes, or data not present in the abstract.'; var userMsg = 'Analyze this paper and return JSON matching this exact schema:\\n{\\n  \"paper_id\": \"' + paperId + '\",\\n  \"paper_category\": \"string — one of: Empirical, Review, Theoretical, Methodological, Applied\",\\n  \"research_problem\": \"string — the core problem addressed\",\\n  \"methodology\": \"string — research method used\",\\n  \"datasets_used\": [\"array of dataset names\"],\\n  \"evaluation_metrics\": [\"array of metrics\"],\\n  \"key_findings\": [\"array of 2-4 main findings\"],\\n  \"strengths\": [\"array of 1-3 strengths\"],\\n  \"limitations\": [\"array of 1-3 limitations\"],\\n  \"future_work\": [\"array of 1-2 suggested directions\"],\\n  \"innovation_score\": 7,\\n  \"relevance_score\": 8,\\n  \"summary\": \"string — 2-3 sentence summary\"\\n}\\n\\nPaper ID: ' + paperId + '\\nTitle: ' + title + '\\nAuthors: ' + authors + '\\nYear: ' + year + '\\nAbstract: ' + abstract; return { 'model': ($env.LLM_MODEL || 'meta-llama/llama-3.2-3b-instruct:free'), 'max_tokens': 1024, 'temperature': 0.2, 'messages': [{ 'role': 'system', 'content': sysPrompt }, { 'role': 'user', 'content': userMsg }] }; })() }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 3,
+              "batchInterval": 2000
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 120000
+        }
+      },
+      "id": "b4c5d6e7-f8a9-0123-bcde-234567890123",
+      "name": "Analyze Paper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1940,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item, index) => {\n  const analysisResponse = item.json;\n\n  // Try pairedItem reference first (most reliable)\n  const pairedIndex = item.pairedItem?.item ?? index;\n  let paperData = $('Split Papers for Processing').all()[pairedIndex]?.json || {};\n\n  // Parse the LLM analysis response\n  let analysis = {};\n  try {\n    const content = analysisResponse.choices?.[0]?.message?.content || '{}';\n    const contentStr = typeof content === 'string' ? content : JSON.stringify(content);\n    const jsonMatch = contentStr.match(/\\{[\\s\\S]*\\}/);\n    if (jsonMatch) {\n      analysis = JSON.parse(jsonMatch[0]);\n    }\n  } catch(e) {\n    analysis = {};\n  }\n\n  // If analysis includes paper_id, use it to find the correct paper (ID-based matching)\n  if (analysis.paper_id && analysis.paper_id !== 'unknown') {\n    const matchedPaper = $('Split Papers for Processing').all().find(p => p.json?.id === analysis.paper_id);\n    if (matchedPaper) {\n      paperData = matchedPaper.json;\n    }\n  }\n\n  // Fallback analysis if LLM failed\n  if (!analysis.methodology) {\n    analysis = {\n      paper_id: paperData.id || 'unknown',\n      paper_category: 'Unknown',\n      research_problem: 'Could not extract — LLM analysis unavailable',\n      methodology: 'Not extractable',\n      datasets_used: [],\n      evaluation_metrics: [],\n      key_findings: ['Analysis unavailable — review abstract manually'],\n      strengths: [],\n      limitations: [],\n      future_work: [],\n      innovation_score: null,\n      relevance_score: null,\n      summary: (paperData.abstract || '').substring(0, 200) || 'No summary available'\n    };\n  }\n\n  return {\n    json: {\n      ...paperData,\n      analysis,\n      processed: true,\n      processed_at: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "id": "c5d6e7f8-a9b0-1234-cdef-345678901234",
+      "name": "Merge Paper + Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "d6e7f8a9-b0c1-2345-defa-456789012345",
+      "name": "Collect All Analyzed Papers",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2360,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_API_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LLM_API_KEY || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { var allPapers = $('Collect All Analyzed Papers').first().json.data || []; var papers = allPapers.slice(0, 40).map(function(p, i) { return { index: i + 1, title: p.title, authors: p.authors, year: p.year, journal: p.journal, abstract: (p.abstract || '').substring(0, 500), analysis: p.analysis, citations: p.citations }; }); var topic = $('Aggregate & Deduplicate').first().json.topic || 'Research Topic'; var citFmt = $('Aggregate & Deduplicate').first().json.citation_format || 'APA 7'; var sysPrompt = 'You are an expert academic researcher producing a full publication-quality literature review. Output ONLY valid JSON — no markdown wrappers. CRITICAL RULES:\\n1. Each paper has an \"index\" field (1-N). Use [N] inline citation markers in ALL prose sections whenever you reference a specific paper, finding, or claim. Example: \"Transformer architectures have demonstrated superior performance [3] compared to earlier RNN approaches [7, 12].\".\\n2. Base ALL statements on the provided papers — never fabricate sources.\\n3. Each thematic section must synthesize multiple papers with [N] markers — never describe papers one by one.\\n4. Write LONG, substantive sections: introduction ~600 words, background ~500 words, each thematic section ~500 words, conclusion ~300 words.\\n5. Distinguish established findings (replicated across 3+ papers) from preliminary ones (single study).\\n6. Record genuine disagreements between authors — do not average them out.'; var userMsg = 'Write a full, chapter-length literature review for: ' + topic + '\\n\\nCitation index (use [N] markers in prose):\\n' + papers.map(function(p) { return '[' + p.index + '] ' + (p.authors || 'Unknown') + ' (' + p.year + '). ' + p.title; }).join('\\n') + '\\n\\nFull paper data: ' + JSON.stringify(papers) + '\\n\\nReturn JSON with EXACTLY these keys — no extra keys:\\n{\\n  \"executive_summary\": \"3-paragraph synthesis overview with [N] citation markers\",\\n  \"introduction\": \"600-word introduction with motivation, scope, and contribution overview. Use [N] markers.\",\\n  \"background\": \"500-word background and theoretical framework section. Use [N] markers.\",\\n  \"taxonomy\": {\"description\": \"How the literature is classified\", \"categories\": [{\"name\": \"string\", \"description\": \"string\", \"paper_count\": 0}]},\\n  \"thematic_sections\": [{\"title\": \"Theme name\", \"content\": \"500-word thematic synthesis with [N] citation markers\", \"key_papers\": [\"exact paper title\"], \"consensus_view\": \"What most papers agree on (or null)\", \"contested_areas\": \"Where papers disagree (or null)\"}],\\n  \"comparison_analysis\": \"400-word comparative analysis with [N] markers\",\\n  \"methodological_trends\": \"300-word methodology evolution summary with [N] markers\",\\n  \"research_gaps\": [\"Specific evidence-based gap 1\", \"gap 2\", \"gap 3\", \"gap 4\", \"gap 5\"],\\n  \"future_directions\": [\"Direction grounded in gaps 1\", \"direction 2\", \"direction 3\", \"direction 4\"],\\n  \"conclusion\": \"300-word conclusion summarising state of knowledge and open questions with [N] markers\",\\n  \"confidence_statement\": \"Honest note on strength of conclusions given abstract-only analysis\",\\n  \"total_papers_surveyed\": ' + papers.length + ',\\n  \"year_range\": \"string\"\\n}'; return { 'model': ($env.LLM_MODEL || 'meta-llama/llama-3.2-3b-instruct:free'), 'max_tokens': parseInt($env.LLM_MAX_TOKENS || '8192'), 'temperature': 0.35, 'messages': [{ 'role': 'system', 'content': sysPrompt }, { 'role': 'user', 'content': userMsg }] }; })() }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 300000
+        }
+      },
+      "id": "e7f8a9b0-c1d2-3456-efab-567890123456",
+      "name": "Synthesize Literature",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2580,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_API_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LLM_API_KEY || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { var papers = ($('Collect All Analyzed Papers').first().json.data || []).slice(0, 25).map(function(p) { return { title: p.title, year: p.year, journal: p.journal, analysis: p.analysis }; }); var topic = $('Aggregate & Deduplicate').first().json.topic; var sysPrompt = 'You are a systematic review specialist identifying research gaps. Base ALL gaps on evidence from the provided papers. NEVER declare something a gap based on a single paper. Provide supporting rationale for each gap. Output ONLY valid JSON.'; var userMsg = 'Identify research gaps in the literature on: ' + topic + '\\n\\nPapers: ' + JSON.stringify(papers) + '\\n\\nOutput JSON:\\n{\\n  \"empirical_gaps\": [{\"gap\": \"string\", \"rationale\": \"string\", \"supporting_papers\": [\"title\"]}],\\n  \"theoretical_gaps\": [{\"gap\": \"string\", \"rationale\": \"string\", \"supporting_papers\": [\"title\"]}],\\n  \"methodological_gaps\": [{\"gap\": \"string\", \"rationale\": \"string\", \"supporting_papers\": [\"title\"]}],\\n  \"contextual_gaps\": [{\"gap\": \"string\", \"rationale\": \"string\"}],\\n  \"temporal_gaps\": [{\"gap\": \"string\", \"rationale\": \"string\"}],\\n  \"priority_gaps\": [\"top 1\", \"top 2\", \"top 3\"],\\n  \"confidence_note\": \"Assessment is based on available abstracts only. Full-text review required for definitive gap identification.\"\\n}'; return { 'model': ($env.LLM_MODEL || 'meta-llama/llama-3.2-3b-instruct:free'), 'max_tokens': 4096, 'temperature': 0.3, 'messages': [{ 'role': 'system', 'content': sysPrompt }, { 'role': 'user', 'content': userMsg }] }; })() }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 180000
+        }
+      },
+      "id": "f8a9b0c1-d2e3-4567-fabc-678901234567",
+      "name": "Identify Research Gaps",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2580,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_API_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LLM_API_KEY || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { var papers = ($('Collect All Analyzed Papers').first().json.data || []).slice(0, 30).map(function(p, i) { return { index: i + 1, title: p.title, authors: p.authors, year: p.year, journal: p.journal || '', doi: p.doi || '' }; }); var fmt = $('Aggregate & Deduplicate').first().json.citation_format || 'APA 7'; var sysPrompt = 'You are an expert citation formatter. Format references according to the specified style. CRITICAL: Use only the metadata provided — do not add or invent any details. Use \"et al.\" for more than 3 authors. Output ONLY valid JSON.'; var userMsg = 'Format these papers as ' + fmt + ' references.\\n\\nPapers: ' + JSON.stringify(papers) + '\\n\\nOutput JSON:\\n{\\n  \"citation_format\": \"' + fmt + '\",\\n  \"formatted_references\": [\"[1] full citation string\", \"[2] full citation string\"],\\n  \"bibtex_entries\": [\"@article{key, ...}\"],\\n  \"formatting_notes\": \"string — any assumptions made\"\\n}'; return { 'model': ($env.LLM_MODEL || 'meta-llama/llama-3.2-3b-instruct:free'), 'max_tokens': 4096, 'temperature': 0.1, 'messages': [{ 'role': 'system', 'content': sysPrompt }, { 'role': 'user', 'content': userMsg }] }; })() }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 180000
+        }
+      },
+      "id": "a9b0c1d2-e3f4-5678-abcd-789012345678",
+      "name": "Generate Citations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2580,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_API_BASE_URL || 'https://openrouter.ai/api/v1') + '/chat/completions' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LLM_API_KEY || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (function() { var papers = ($('Collect All Analyzed Papers').first().json.data || []).slice(0, 30).map(function(p, i) { return { ref: '[' + (i+1) + ']', title: p.title, authors: p.authors, year: p.year, journal: p.journal, citations: p.citations, analysis: p.analysis }; }); var sysPrompt = 'You are a systematic review specialist. Create a comprehensive literature matrix. Output ONLY valid JSON.'; var userMsg = 'Create a literature matrix for these papers.\\n\\nPapers: ' + JSON.stringify(papers) + '\\n\\nOutput JSON:\\n{\\n  \"matrix_rows\": [{\\n    \"ref\": \"[1]\",\\n    \"authors_short\": \"Smith et al.\",\\n    \"year\": \"2023\",\\n    \"title_short\": \"short title\",\\n    \"method\": \"method type\",\\n    \"dataset\": \"dataset name\",\\n    \"key_metric\": \"metric\",\\n    \"category\": \"Empirical\",\\n    \"innovation_score\": 7,\\n    \"limitations\": \"brief limitation\",\\n    \"citations\": 42\\n  }],\\n  \"thematic_groupings\": [{\"theme\": \"string\", \"refs\": [\"[1]\", \"[2]\"]}],\\n  \"temporal_distribution\": {\"2020\": 3, \"2021\": 5},\\n  \"methodology_distribution\": {\"Deep Learning\": 10, \"Survey\": 5}\\n}'; return { 'model': ($env.LLM_MODEL || 'meta-llama/llama-3.2-3b-instruct:free'), 'max_tokens': 4096, 'temperature': 0.2, 'messages': [{ 'role': 'system', 'content': sysPrompt }, { 'role': 'user', 'content': userMsg }] }; })() }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json",
+              "neverError": true
+            }
+          },
+          "timeout": 180000
+        }
+      },
+      "id": "b0c1d2e3-f4a5-6789-bcde-890123456789",
+      "name": "Build Literature Matrix",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2580,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "c1d2e3f4-a5b6-7890-cdef-901234567890",
+      "name": "Merge Final Outputs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2800,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allPapers = ($('Collect All Analyzed Papers').first().json.data || []).sort((a, b) => (Number(b.year) || 0) - (Number(a.year) || 0));\nconst queryData = $('Aggregate & Deduplicate').first().json;\nconst validateData = $('Validate & Configure').first().json;\n\nfunction parseAgentJson(nodeGetter) {\n  try {\n    const r = nodeGetter();\n    const content = r.choices?.[0]?.message?.content || r.content || '{}';\n    const str = typeof content === 'string' ? content : JSON.stringify(content);\n    const m = str.match(/\\{[\\s\\S]*\\}/);\n    return m ? JSON.parse(m[0]) : {};\n  } catch(e) { const validateData2 = $('Validate & Configure').first().json;\nreturn {}; }\n}\n\nconst synthesis = parseAgentJson(() => $('Synthesize Literature').first().json);\nconst gaps = parseAgentJson(() => $('Identify Research Gaps').first().json);\nconst citData = parseAgentJson(() => $('Generate Citations').first().json);\nconst matrixData = parseAgentJson(() => $('Build Literature Matrix').first().json);\n\n// Build synced citations from papers (fallback if LLM citation failed)\nconst syncedCitations = allPapers.map((p, i) => {\n  const existing = (citData.formatted_references || [])[i];\n  const citStr = existing || ('[' + (i+1) + '] ' + (p.authors || 'Unknown') + ', \"' + p.title + ',\" ' + (p.journal || 'Journal') + ', ' + p.year + (p.doi ? '. doi: ' + p.doi : '') + '.');\n  return { index: i + 1, citation: citStr, title: p.title, doi: p.doi };\n});\n\nconst years = allPapers.map(p => parseInt(p.year)).filter(y => !isNaN(y));\nconst minYear = years.length > 0 ? Math.min(...years) : 2018;\nconst maxYear = years.length > 0 ? Math.max(...years) : 2026;\n\nreturn {\n  json: {\n    research_id: queryData.research_id || validateData.research_id,\n    topic: queryData.topic,\n    papers: allPapers,\n    total_papers: allPapers.length,\n    year_range: { min: minYear, max: maxYear },\n    sources_queried: queryData.sources_queried || [],\n    keywords: queryData.keywords || [],\n    synthesis,\n    gaps,\n    citations: syncedCitations,\n    citation_format: queryData.citation_format || 'APA 7',\n    matrix: matrixData,\n    config: queryData.config || validateData.config,\n    generated_at: new Date().toISOString(),\n    llm_model: $env.LLM_MODEL || 'unknown',\n    report_format: validateData2.report_format || 'Standard Summary',\n    ai_disclosure: {\n      tool: 'Research Intelligence n8n v2.0.0',\n      model: $env.LLM_MODEL || 'unknown',\n      provider: $env.LLM_API_BASE_URL || 'unknown',\n      activities: ['Query refinement', 'Paper analysis', 'Literature synthesis', 'Gap identification', 'Citation formatting'],\n      limitations: 'Analysis based on abstracts only. Full-text review recommended. Citations generated by AI — verify against original sources before use. Research gaps are preliminary assessments requiring human evaluation.',\n      human_review_required: true\n    }\n  }\n};"
+      },
+      "id": "d2e3f4a5-b6c7-8901-defa-012345678901",
+      "name": "Assemble Complete Review Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3020,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "POST"
+      },
+      "id": "e3f4a5b6-c7d8-9012-efab-123456789012",
+      "name": "Human Review Gate",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3240,
+        420
+      ],
+      "webhookId": "human-review-approval"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body?.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f4a5b6c7-d8e9-0123-fabc-234567890123",
+      "name": "Check Approval Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3460,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Assemble Complete Review Data').first().json;\nconst validateData = $('Validate & Configure').first().json;\nconst topic = data.topic || 'Research Topic';\nconst synthesis = data.synthesis || {};\nconst papers = data.papers || [];\nconst citations = data.citations || [];\nconst gaps = data.gaps || {};\nconst matrix = data.matrix || {};\nconst aiDisclosure = data.ai_disclosure || {};\nconst feedback = $input.first().json.body?.feedback || '';\nconst isFullReport = (validateData.report_format || 'Standard Summary').includes('Full');\n\n// ── HTML escape ──────────────────────────────────────────────────────────────\nfunction esc(str) {\n  if (!str) return '';\n  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;');\n}\n\n// ── Inline citation linker ───────────────────────────────────────────────────\n// Convert [N] markers in LLM-generated prose to anchor links\nfunction linkCite(text) {\n  if (!text) return '';\n  return esc(text).replace(/\\[(\\d+(?:,\\s*\\d+)*)\\]/g, (match, nums) => {\n    const links = nums.split(',').map(n => {\n      const idx = n.trim();\n      return `<a href=\"#ref-${idx}\" class=\"cite\">[${idx}]</a>`;\n    });\n    return links.join('');\n  });\n}\n\n// ── Stats ────────────────────────────────────────────────────────────────────\nconst years = papers.map(p => parseInt(p.year)).filter(y => !isNaN(y));\nconst minYear = years.length > 0 ? Math.min(...years) : 2018;\nconst maxYear = years.length > 0 ? Math.max(...years) : 2026;\nconst totalCitations = papers.reduce((s, p) => s + (p.citations || 0), 0);\nconst avgCitations = papers.length > 0 ? Math.round(totalCitations / papers.length) : 0;\nconst sources = [...new Set(papers.map(p => p.source).filter(Boolean))];\nconst openAccessCount = papers.filter(p => p.is_open_access).length;\n\n// ── SVG CHARTS ───────────────────────────────────────────────────────────────\n\nfunction yearHistogramSVG() {\n  if (years.length < 2) return '';\n  const yearCounts = {};\n  years.forEach(y => { yearCounts[y] = (yearCounts[y] || 0) + 1; });\n  const sortedYears = Object.keys(yearCounts).sort();\n  const maxCount = Math.max(...Object.values(yearCounts));\n  const W = 520, H = 205, PL = 44, PR = 14, PT = 36, PB = 52;\n  const plotW = W - PL - PR, plotH = H - PT - PB;\n  const barW = Math.max(8, Math.min(36, plotW / sortedYears.length - 4));\n  const xStep = plotW / sortedYears.length;\n  const step = Math.ceil(maxCount / 5);\n\n  const gridLines = [1,2,3,4,5].map(i => {\n    const val = i * step; if (val > maxCount * 1.15) return '';\n    const gy = (PT + plotH - (val / maxCount) * plotH).toFixed(1);\n    return `<line x1=\"${PL}\" y1=\"${gy}\" x2=\"${W-PR}\" y2=\"${gy}\" stroke=\"rgba(0,0,0,0.055)\" stroke-width=\"0.8\"/>\n<text x=\"${(PL-7).toFixed(1)}\" y=\"${(parseFloat(gy)+3).toFixed(1)}\" text-anchor=\"end\" font-size=\"9\" fill=\"#6b7280\">${val}</text>`;\n  }).join('\\n');\n\n  const bars = sortedYears.map((yr, i) => {\n    const count = yearCounts[yr];\n    const bh = (count / maxCount) * plotH;\n    const x = PL + i * xStep + (xStep - barW) / 2;\n    const y = PT + plotH - bh;\n    return `<rect x=\"${x.toFixed(1)}\" y=\"${y.toFixed(1)}\" width=\"${barW}\" height=\"${bh.toFixed(1)}\" fill=\"url(#yh-grad)\" rx=\"2.5\" opacity=\"0.9\"/>\n<text x=\"${(x+barW/2).toFixed(1)}\" y=\"${(y-5).toFixed(1)}\" text-anchor=\"middle\" font-size=\"9\" font-weight=\"600\" fill=\"#1d4ed8\">${count}</text>\n<text x=\"${(x+barW/2).toFixed(1)}\" y=\"${(H-PB+15).toFixed(1)}\" text-anchor=\"middle\" font-size=\"8\" fill=\"#6b7280\">${yr}</text>`;\n  }).join('\\n');\n\n  return `<figure class=\"chart-fig\">\n<svg viewBox=\"0 0 ${W} ${H}\" xmlns=\"http://www.w3.org/2000/svg\" class=\"chart-svg\" role=\"img\" aria-label=\"Publications per year bar chart\">\n  <defs>\n    <linearGradient id=\"yh-grad\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#1a3a5c\"/><stop offset=\"100%\" stop-color=\"#2d6a9f\"/>\n    </linearGradient>\n  </defs>\n  <text x=\"${W/2}\" y=\"20\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"600\" fill=\"#0c1426\">Publications per Year</text>\n  ${gridLines}\n  <line x1=\"${PL}\" y1=\"${PT}\" x2=\"${PL}\" y2=\"${PT+plotH}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  <line x1=\"${PL}\" y1=\"${PT+plotH}\" x2=\"${W-PR}\" y2=\"${PT+plotH}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  ${bars}\n  <text x=\"${W/2}\" y=\"${H-5}\" text-anchor=\"middle\" font-size=\"9.5\" fill=\"#6b7280\">Year</text>\n</svg>\n<figcaption>Figure 1 — Annual publication counts for the ${papers.length} papers retrieved (${minYear}–${maxYear}).</figcaption>\n</figure>`;\n}\n\nfunction sourceBarSVG() {\n  const srcCounts = {};\n  papers.forEach(p => { const s = p.source || 'Unknown'; srcCounts[s] = (srcCounts[s] || 0) + 1; });\n  const sorted = Object.entries(srcCounts).sort((a,b) => b[1]-a[1]);\n  if (!sorted.length) return '';\n  const palette = ['#1a3a5c','#2d6a9f','#3d8bbf','#c0392b','#27ae60','#8e44ad','#e67e22'];\n  const maxCount = sorted[0][1];\n  const W = 380, ROW_H = 28, PL = 130, PR = 60, H = sorted.length * ROW_H + 54;\n  const plotW = W - PL - PR;\n\n  const gridLines = [.25,.5,.75,1].map(f =>\n    `<line x1=\"${(PL + f*plotW).toFixed(1)}\" y1=\"32\" x2=\"${(PL + f*plotW).toFixed(1)}\" y2=\"${H-18}\" stroke=\"rgba(0,0,0,0.055)\" stroke-width=\"0.8\"/>`\n  ).join('\\n');\n\n  const bars = sorted.map(([src, cnt], i) => {\n    const bw = Math.max(4, (cnt / maxCount) * plotW);\n    const y = 42 + i * ROW_H;\n    return `<text x=\"${PL-7}\" y=\"${y+13}\" text-anchor=\"end\" font-size=\"9\" fill=\"#3b5068\">${esc(src)}</text>\n<rect x=\"${PL}\" y=\"${y}\" width=\"${bw.toFixed(1)}\" height=\"20\" fill=\"${palette[i % palette.length]}\" rx=\"2.5\" opacity=\"0.88\"/>\n<text x=\"${(PL+bw+7).toFixed(1)}\" y=\"${y+13}\" font-size=\"9\" font-weight=\"600\" fill=\"#1d4ed8\">${cnt} · ${Math.round(cnt/papers.length*100)}%</text>`;\n  }).join('\\n');\n\n  return `<figure class=\"chart-fig\">\n<svg viewBox=\"0 0 ${W} ${H}\" xmlns=\"http://www.w3.org/2000/svg\" class=\"chart-svg\" role=\"img\" aria-label=\"Papers by database\">\n  <text x=\"${W/2}\" y=\"20\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"600\" fill=\"#0c1426\">Papers by Database</text>\n  ${gridLines}\n  <line x1=\"${PL}\" y1=\"32\" x2=\"${PL}\" y2=\"${H-18}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  <line x1=\"${PL}\" y1=\"${H-18}\" x2=\"${W-PR}\" y2=\"${H-18}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  ${bars}\n  <text x=\"${(PL+plotW/2).toFixed(1)}\" y=\"${H-4}\" text-anchor=\"middle\" font-size=\"9\" fill=\"#6b7280\">Count</text>\n</svg>\n<figcaption>Figure 2 — Breakdown of ${papers.length} papers by source database.</figcaption>\n</figure>`;\n}\n\nfunction categoryBarSVG() {\n  const catCounts = {};\n  papers.forEach(p => { const c = p.analysis?.paper_category || 'Unclassified'; catCounts[c] = (catCounts[c] || 0) + 1; });\n  const sorted = Object.entries(catCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);\n  if (!sorted.length) return '';\n  const palette = ['#1a3a5c','#2d6a9f','#3d8bbf','#c0392b','#27ae60','#8e44ad','#e67e22','#1a3a5c'];\n  const maxCount = sorted[0][1];\n  const W = 420, ROW_H = 28, PL = 155, PR = 55, H = sorted.length * ROW_H + 54;\n  const plotW = W - PL - PR;\n\n  const gridLines = [.25,.5,.75,1].map(f =>\n    `<line x1=\"${(PL + f*plotW).toFixed(1)}\" y1=\"32\" x2=\"${(PL + f*plotW).toFixed(1)}\" y2=\"${H-18}\" stroke=\"rgba(0,0,0,0.055)\" stroke-width=\"0.8\"/>`\n  ).join('\\n');\n\n  const bars = sorted.map(([cat, cnt], i) => {\n    const bw = Math.max(4, (cnt / maxCount) * plotW);\n    const y = 42 + i * ROW_H;\n    return `<text x=\"${PL-7}\" y=\"${y+13}\" text-anchor=\"end\" font-size=\"8.5\" fill=\"#3b5068\">${esc(cat)}</text>\n<rect x=\"${PL}\" y=\"${y}\" width=\"${bw.toFixed(1)}\" height=\"20\" fill=\"${palette[i % palette.length]}\" rx=\"2.5\" opacity=\"0.88\"/>\n<text x=\"${(PL+bw+7).toFixed(1)}\" y=\"${y+13}\" font-size=\"9\" font-weight=\"600\" fill=\"#1d4ed8\">${cnt}</text>`;\n  }).join('\\n');\n\n  return `<figure class=\"chart-fig\">\n<svg viewBox=\"0 0 ${W} ${H}\" xmlns=\"http://www.w3.org/2000/svg\" class=\"chart-svg\" role=\"img\" aria-label=\"Paper categories\">\n  <text x=\"${W/2}\" y=\"20\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"600\" fill=\"#0c1426\">Paper Categories</text>\n  ${gridLines}\n  <line x1=\"${PL}\" y1=\"32\" x2=\"${PL}\" y2=\"${H-18}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  <line x1=\"${PL}\" y1=\"${H-18}\" x2=\"${W-PR}\" y2=\"${H-18}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  ${bars}\n  <text x=\"${(PL+plotW/2).toFixed(1)}\" y=\"${H-4}\" text-anchor=\"middle\" font-size=\"9\" fill=\"#6b7280\">Count</text>\n</svg>\n<figcaption>Figure 3 — Distribution of paper types as classified by AI analysis.</figcaption>\n</figure>`;\n}\n\nfunction scatterSVG() {\n  const pts = papers.filter(p => p.analysis?.innovation_score != null && p.analysis?.relevance_score != null);\n  if (pts.length < 4) return '';\n  const W = 340, H = 265, PL = 46, PR = 20, PT = 36, PB = 44;\n  const plotW = W - PL - PR, plotH = H - PT - PB;\n\n  const grid = [2,4,6,8,10].map(v => {\n    const gx = (PL + (v/10) * plotW).toFixed(1);\n    const gy = (PT + plotH - (v/10) * plotH).toFixed(1);\n    return `<line x1=\"${gx}\" y1=\"${PT}\" x2=\"${gx}\" y2=\"${PT+plotH}\" stroke=\"rgba(0,0,0,0.055)\" stroke-width=\"0.8\"/>\n<text x=\"${gx}\" y=\"${PT+plotH+14}\" text-anchor=\"middle\" font-size=\"8.5\" fill=\"#6b7280\">${v}</text>\n<line x1=\"${PL}\" y1=\"${gy}\" x2=\"${W-PR}\" y2=\"${gy}\" stroke=\"rgba(0,0,0,0.055)\" stroke-width=\"0.8\"/>\n<text x=\"${PL-5}\" y=\"${parseFloat(gy)+3}\" text-anchor=\"end\" font-size=\"8.5\" fill=\"#6b7280\">${v}</text>`;\n  }).join('\\n');\n\n  const dots = pts.map(p => {\n    const x = (PL + (p.analysis.innovation_score / 10) * plotW).toFixed(1);\n    const y = (PT + plotH - (p.analysis.relevance_score / 10) * plotH).toFixed(1);\n    const auth = esc(((p.authors || '').split(',')[0] || 'Unknown').trim());\n    return `<circle cx=\"${x}\" cy=\"${y}\" r=\"5\" fill=\"#1a3a5c\" fill-opacity=\"0.6\" stroke=\"#ffffff\" stroke-width=\"1.2\"><title>${auth} (${p.year || '?'})</title></circle>`;\n  }).join('\\n');\n\n  return `<figure class=\"chart-fig\">\n<svg viewBox=\"0 0 ${W} ${H}\" xmlns=\"http://www.w3.org/2000/svg\" class=\"chart-svg\" role=\"img\" aria-label=\"Innovation vs Relevance scatter\">\n  <text x=\"${W/2}\" y=\"20\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"600\" fill=\"#0c1426\">Innovation vs Relevance</text>\n  ${grid}\n  <line x1=\"${PL}\" y1=\"${PT}\" x2=\"${PL}\" y2=\"${PT+plotH}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  <line x1=\"${PL}\" y1=\"${PT+plotH}\" x2=\"${W-PR}\" y2=\"${PT+plotH}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  ${dots}\n  <text x=\"${W/2}\" y=\"${H-5}\" text-anchor=\"middle\" font-size=\"9.5\" fill=\"#6b7280\">Innovation Score</text>\n  <text x=\"12\" y=\"${PT+plotH/2}\" text-anchor=\"middle\" font-size=\"9.5\" fill=\"#6b7280\" transform=\"rotate(-90 12 ${PT+plotH/2})\">Relevance</text>\n</svg>\n<figcaption>Figure 4 — Innovation score vs relevance score for ${pts.length} analysed papers. Each point is one paper; hover for author.</figcaption>\n</figure>`;\n}\n\nfunction citationHistSVG() {\n  const citVals = papers.map(p => p.citations || 0).filter(c => c >= 0);\n  if (citVals.length < 4) return '';\n  const breakpoints = [1, 10, 50, 100, 500, 1000, Infinity];\n  const labels = ['0','1–9','10–49','50–99','100–499','500–999','1000+'];\n  const counts = new Array(labels.length).fill(0);\n  citVals.forEach(c => {\n    for (let i = 0; i < breakpoints.length - 1; i++) {\n      if (c >= breakpoints[i] && c < breakpoints[i+1]) { counts[i]++; break; }\n    }\n    if (c < 1) counts[0]++;\n  });\n  const maxCount = Math.max(...counts, 1);\n  const W = 420, H = 190, PL = 42, PR = 14, PT = 36, PB = 46;\n  const plotW = W - PL - PR, plotH = H - PT - PB;\n  const barW = plotW / labels.length - 5;\n\n  const gridLines = [.25,.5,.75,1].map(f => {\n    const val = Math.round(f * maxCount);\n    const gy = (PT + plotH - f * plotH).toFixed(1);\n    return `<line x1=\"${PL}\" y1=\"${gy}\" x2=\"${W-PR}\" y2=\"${gy}\" stroke=\"rgba(0,0,0,0.055)\" stroke-width=\"0.8\"/>\n<text x=\"${(PL-7).toFixed(1)}\" y=\"${(parseFloat(gy)+3).toFixed(1)}\" text-anchor=\"end\" font-size=\"9\" fill=\"#6b7280\">${val}</text>`;\n  }).join('\\n');\n\n  const bars = labels.map((lbl, i) => {\n    const cnt = counts[i]; if (!cnt) return '';\n    const bh = (cnt / maxCount) * plotH;\n    const x = PL + i * (plotW / labels.length) + 2.5;\n    const y = PT + plotH - bh;\n    return `<rect x=\"${x.toFixed(1)}\" y=\"${y.toFixed(1)}\" width=\"${barW.toFixed(1)}\" height=\"${bh.toFixed(1)}\" fill=\"url(#ch-grad)\" rx=\"2.5\" opacity=\"0.88\"/>\n<text x=\"${(x+barW/2).toFixed(1)}\" y=\"${(y-5).toFixed(1)}\" text-anchor=\"middle\" font-size=\"9\" font-weight=\"600\" fill=\"#1d4ed8\">${cnt}</text>\n<text x=\"${(x+barW/2).toFixed(1)}\" y=\"${H-PB+16}\" text-anchor=\"middle\" font-size=\"7.5\" fill=\"#6b7280\">${lbl}</text>`;\n  }).join('\\n');\n\n  return `<figure class=\"chart-fig\">\n<svg viewBox=\"0 0 ${W} ${H}\" xmlns=\"http://www.w3.org/2000/svg\" class=\"chart-svg\" role=\"img\" aria-label=\"Citation count distribution\">\n  <defs>\n    <linearGradient id=\"ch-grad\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\">\n      <stop offset=\"0%\" stop-color=\"#c0392b\"/><stop offset=\"100%\" stop-color=\"#e74c3c\"/>\n    </linearGradient>\n  </defs>\n  <text x=\"${W/2}\" y=\"20\" text-anchor=\"middle\" font-size=\"12\" font-weight=\"600\" fill=\"#0c1426\">Citation Count Distribution</text>\n  ${gridLines}\n  <line x1=\"${PL}\" y1=\"${PT}\" x2=\"${PL}\" y2=\"${PT+plotH}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  <line x1=\"${PL}\" y1=\"${PT+plotH}\" x2=\"${W-PR}\" y2=\"${PT+plotH}\" stroke=\"rgba(12,20,38,0.18)\" stroke-width=\"1\"/>\n  ${bars}\n  <text x=\"${W/2}\" y=\"${H-5}\" text-anchor=\"middle\" font-size=\"9.5\" fill=\"#6b7280\">Citation Buckets</text>\n</svg>\n<figcaption>Figure 5 — Distribution of total citation counts (all-time, at time of retrieval).</figcaption>\n</figure>`;\n}\n\n// ── Table of Contents ─────────────────────────────────────────────────────────\nfunction buildToC() {\n  if (!isFullReport) return '';\n  const themeItems = (synthesis.thematic_sections || []).map((s, i) =>\n    `<li><a href=\"#sec-t${i}\">3.${i+1} — ${esc(s.title || 'Theme ' + (i+1))}</a></li>`\n  ).join('');\n  return `<nav class=\"toc\" aria-label=\"Table of contents\">\n  <h2>Table of Contents</h2>\n  <ol>\n    <li><a href=\"#abstract\">Abstract</a></li>\n    <li><a href=\"#sec-intro\">Chapter 1 — Introduction</a></li>\n    <li><a href=\"#sec-bg\">Chapter 2 — Background &amp; Theoretical Framework</a></li>\n    <li><a href=\"#sec-thematic\">Chapter 3 — Thematic Analysis</a>\n      <ol>${themeItems}</ol></li>\n    <li><a href=\"#sec-compare\">Chapter 4 — Comparative Analysis</a></li>\n    <li><a href=\"#sec-methods\">Chapter 5 — Methodological Trends</a></li>\n    <li><a href=\"#sec-gaps\">Chapter 6 — Research Gaps</a></li>\n    <li><a href=\"#sec-future\">Chapter 7 — Future Directions</a></li>\n    <li><a href=\"#sec-conclusion\">Chapter 8 — Conclusion</a></li>\n    <li><a href=\"#sec-refs\">References</a></li>\n    <li><a href=\"#appA\">Appendix A — Literature Matrix</a></li>\n    <li><a href=\"#appB\">Appendix B — Evidence Cards</a></li>\n    <li><a href=\"#appC\">Appendix C — Bibliometric Charts</a></li>\n  </ol>\n</nav>`;\n}\n\n// ── Thematic Sections ─────────────────────────────────────────────────────────\nfunction thematicHTML() {\n  const sections = synthesis.thematic_sections || [];\n  if (!sections.length) return `<p class=\"unavail\">Thematic analysis not available for ${papers.length} retrieved papers.</p>`;\n  return sections.map((s, i) => {\n    const keyPapersHTML = (s.key_papers || []).map(t => {\n      const idx = papers.findIndex(p => p.title && p.title.toLowerCase().includes(t.toLowerCase().substring(0, 25)));\n      return idx >= 0 ? `<a href=\"#ref-${idx+1}\" class=\"cite\">${esc(t)}</a>` : `<em>${esc(t)}</em>`;\n    }).join('; ');\n    return `<div class=\"theme-block\" id=\"sec-t${i}\">\n  <h3>${isFullReport ? `3.${i+1}` : ''} ${esc(s.title || 'Theme ' + (i+1))}</h3>\n  <div class=\"theme-body\">${linkCite(s.content || '')}</div>\n  ${s.consensus_view ? `<div class=\"insight consensus-box\"><strong>Consensus view:</strong> ${linkCite(s.consensus_view)}</div>` : ''}\n  ${s.contested_areas ? `<div class=\"insight contested-box\"><strong>Contested:</strong> ${linkCite(s.contested_areas)}</div>` : ''}\n  ${keyPapersHTML ? `<div class=\"key-src\"><strong>Key sources:</strong> ${keyPapersHTML}</div>` : ''}\n</div>`;\n  }).join('\\n');\n}\n\n// ── Gaps ──────────────────────────────────────────────────────────────────────\nfunction gapsHTML() {\n  const pGaps = gaps.priority_gaps || synthesis.research_gaps || [];\n  if (!pGaps.length) return '<p class=\"unavail\">No specific research gaps identified. Full-text review recommended.</p>';\n  const allGaps = [...(gaps.empirical_gaps || []), ...(gaps.theoretical_gaps || []), ...(gaps.methodological_gaps || [])];\n  const typedGaps = allGaps.length > 0 ? allGaps : pGaps;\n  return typedGaps.map((g, i) => {\n    const gapText = typeof g === 'string' ? g : (g.gap || JSON.stringify(g));\n    const gType = typeof g === 'object' && g.type ? g.type : (typeof g === 'object' && g.rationale ? 'identified' : '');\n    const rationale = typeof g === 'object' ? (g.rationale || '') : '';\n    const strength = typeof g === 'object' ? (g.evidence_strength || '') : '';\n    const suppPapers = typeof g === 'object' ? (g.supporting_papers || []) : [];\n    return `<div class=\"gap-card\">\n  <div class=\"gap-header\">\n    <span class=\"gap-num\">Gap ${i+1}</span>\n    ${gType ? `<span class=\"gap-type-tag\">${esc(gType)}</span>` : ''}\n    ${strength ? `<span class=\"ev-strength ev-${esc(strength)}\">${esc(strength)}</span>` : ''}\n  </div>\n  <p class=\"gap-text\">${linkCite(gapText)}</p>\n  ${rationale ? `<p class=\"gap-rationale\"><em>${linkCite(rationale)}</em></p>` : ''}\n  ${suppPapers.length ? `<p class=\"gap-src\">Evidenced by: ${suppPapers.slice(0,3).map(t => { const idx = papers.findIndex(p => p.title && p.title.toLowerCase().includes(t.toLowerCase().substring(0,20))); return idx >= 0 ? `<a href=\"#ref-${idx+1}\" class=\"cite\">${esc(t)}</a>` : `<em>${esc(t)}</em>`; }).join('; ')}</p>` : ''}\n</div>`;\n  }).join('\\n');\n}\n\n// ── Literature Matrix ─────────────────────────────────────────────────────────\nfunction matrixHTML() {\n  const rows = papers.slice(0, 50).map((p, i) => ({\n    n: i + 1,\n    auth: (p.authors || '').split(',')[0].trim() + ((p.authors || '').includes(',') ? ' et al.' : ''),\n    yr: p.year || '—',\n    title: (p.title || '').substring(0, 60) + ((p.title || '').length > 60 ? '…' : ''),\n    method: p.analysis?.methodology || '—',\n    datasets: (p.analysis?.datasets_used || []).slice(0,2).join(', ') || '—',\n    metrics: (p.analysis?.evaluation_metrics || []).slice(0,2).join(', ') || '—',\n    cat: p.analysis?.paper_category || '—',\n    inn: p.analysis?.innovation_score,\n    rel: p.analysis?.relevance_score,\n    lim: (p.analysis?.limitations || ['—'])[0] || '—',\n    cit: p.citations || 0,\n    doi: p.doi || '',\n    oa: p.is_open_access\n  }));\n\n  const scoreSpan = (v) => {\n    if (v == null) return '<span class=\"score-na\">—</span>';\n    const col = v >= 7 ? '#1b5e20' : v >= 4 ? '#e65100' : '#b71c1c';\n    return `<span class=\"score-badge\" style=\"color:${col};border-color:${col}\">${v}</span>`;\n  };\n\n  const ths = ['#','Authors','Year','Title','Method','Datasets','Metrics','Category','Inn','Rel','Limitations','Cit.'];\n  const thead = `<tr>${ths.map(h => `<th>${esc(h)}</th>`).join('')}</tr>`;\n  const tbody = rows.map((r, i) =>\n    `<tr>\n      <td><a href=\"#ref-${r.n}\" class=\"cite\">[${r.n}]</a>${r.oa ? ' <span class=\"oa-m\" title=\"Open Access\">OA</span>' : ''}</td>\n      <td>${esc(r.auth)}</td>\n      <td>${esc(r.yr)}</td>\n      <td class=\"tc\">${r.doi ? `<a href=\"https://doi.org/${esc(r.doi)}\" target=\"_blank\">${esc(r.title)}</a>` : esc(r.title)}</td>\n      <td>${esc(r.method)}</td>\n      <td>${esc(r.datasets)}</td>\n      <td>${esc(r.metrics)}</td>\n      <td><span class=\"cat-tag\">${esc(r.cat)}</span></td>\n      <td>${scoreSpan(r.inn)}</td>\n      <td>${scoreSpan(r.rel)}</td>\n      <td class=\"lim-col\">${esc(r.lim)}</td>\n      <td class=\"num-col\">${r.cit.toLocaleString()}</td>\n    </tr>`\n  ).join('\\n');\n\n  return `<div class=\"table-wrap\"><table class=\"mt\"><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>`;\n}\n\n// ── Evidence Cards ────────────────────────────────────────────────────────────\nfunction evidenceCards() {\n  const srcColors = { 'ArXiv':'#b71c1c','CrossRef':'#1565c0','PubMed':'#1b5e20','OpenAlex':'#4a148c','Semantic Scholar':'#e65100' };\n  return papers.map((p, i) => {\n    const a = p.analysis || {};\n    const scoreColor = s => s >= 7 ? '#1b5e20' : s >= 4 ? '#e65100' : '#b71c1c';\n    const srcCol = srcColors[p.source] || '#546e7a';\n    const verBadge = p.verification_status === 'verified' || p.verification_status === 'doi_resolves'\n      ? '<span class=\"ver-badge\">✓ Verified</span>' : '';\n    return `<article class=\"ev-card\" id=\"ref-${i+1}\">\n  <header class=\"ev-card-head\">\n    <span class=\"ev-ref\">[${i+1}]</span>\n    <span class=\"ev-src-tag\" style=\"background:${srcCol}\">${esc(p.source)}</span>\n    ${p.is_open_access ? '<span class=\"oa-badge\">Open Access</span>' : ''}\n    ${verBadge}\n    ${a.innovation_score != null ? `<span class=\"ev-score\" style=\"color:${scoreColor(a.innovation_score)}\">Inn. ${a.innovation_score}/10</span>` : ''}\n    ${a.relevance_score != null ? `<span class=\"ev-score\" style=\"color:${scoreColor(a.relevance_score)}\">Rel. ${a.relevance_score}/10</span>` : ''}\n  </header>\n  <h4 class=\"ev-title\">${p.url ? `<a href=\"${esc(p.url)}\" target=\"_blank\" rel=\"noopener\">${esc(p.title)}</a>` : esc(p.title)}</h4>\n  <p class=\"ev-meta\">${esc(p.authors)} · <strong>${esc(p.year)}</strong> · <em>${esc(p.journal || p.source)}</em>${p.citations ? ` · ${p.citations.toLocaleString()} citations` : ''}${p.doi ? ` · <a href=\"https://doi.org/${esc(p.doi)}\" target=\"_blank\" rel=\"noopener\" class=\"doi-link\">DOI</a>` : ''}</p>\n  ${p.abstract && p.abstract !== 'Abstract not available' ? `<p class=\"ev-abstract\">${esc(p.abstract.substring(0, 500))}${p.abstract.length > 500 ? '…' : ''}</p>` : ''}\n  ${a.key_findings?.length ? `<div class=\"ev-section\"><strong>Key findings:</strong><ul>${a.key_findings.slice(0,4).map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>` : ''}\n  ${a.methodology ? `<div class=\"ev-section\"><strong>Methodology:</strong> ${esc(a.methodology)}</div>` : ''}\n  ${a.limitations?.length ? `<div class=\"ev-section ev-lim\"><strong>Limitations:</strong> ${esc(a.limitations[0])}</div>` : ''}\n  ${a.future_work?.length ? `<div class=\"ev-section ev-fut\"><strong>Future work:</strong> ${esc(a.future_work[0])}</div>` : ''}\n</article>`;\n  }).join('\\n');\n}\n\n// ── Taxonomy ──────────────────────────────────────────────────────────────────\nfunction taxonomyHTML() {\n  const tax = synthesis.taxonomy || {};\n  if (!tax.categories?.length) return '';\n  const cats = tax.categories.map(c =>\n    `<div class=\"tax-item\"><span class=\"tax-name\">${esc(c.name)}</span> <span class=\"tax-count\">${c.paper_count || 0} papers</span><p>${esc(c.description)}</p></div>`\n  ).join('\\n');\n  return `<div class=\"taxonomy-block\"><p class=\"tax-desc\">${esc(tax.description || '')}</p>${cats}</div>`;\n}\n\n// ── Chapter heading helper ────────────────────────────────────────────────────\nconst chTag = isFullReport ? 'h2' : 'h2';\nconst ch = (n, label, id) => isFullReport\n  ? `<${chTag} id=\"${id}\" class=\"chapter-head\"><span class=\"ch-num\">Chapter ${n}</span> ${esc(label)}</${chTag}>`\n  : `<h2 id=\"${id}\">${esc(label)}</h2>`;\n\nconst generatedDate = new Date().toLocaleDateString('en-GB', {year:'numeric', month:'long', day:'numeric'});\nconst discipline = data.config?.discipline || validateData?.discipline || '';\n\nconst html = `<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>${esc(topic)} — Literature Review</title>\n<style>\n/* ═══ Reset & Base ═══════════════════════════════════════════════════════ */\n*{box-sizing:border-box;margin:0;padding:0}\nhtml{scroll-behavior:smooth}\nbody{font-family:'Times New Roman',Georgia,serif;font-size:11.5pt;line-height:1.65;color:#1a1a1a;background:#fff;max-width:960px;margin:0 auto;padding:24mm 20mm 32mm}\n@media print{body{padding:15mm 12mm;max-width:none}@page{margin:20mm 15mm}.no-print{display:none}}\n\n/* ═══ Typography ═════════════════════════════════════════════════════════ */\nh1{font-size:18pt;font-weight:bold;line-height:1.3;text-align:center;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8pt}\nh2.chapter-head{font-size:13pt;font-weight:bold;margin:28pt 0 10pt;border-bottom:2px solid #1a3a5c;padding-bottom:4pt;text-transform:uppercase;letter-spacing:.03em}\nh2:not(.chapter-head){font-size:12.5pt;font-weight:bold;margin:22pt 0 8pt;border-bottom:1px solid #ccc;padding-bottom:3pt;text-transform:uppercase;letter-spacing:.03em}\n.ch-num{display:block;font-size:9pt;font-weight:normal;color:#1a3a5c;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3pt}\nh3{font-size:11.5pt;font-weight:bold;margin:16pt 0 6pt;color:#1a3a5c}\nh4{font-size:11pt;font-weight:bold;margin:12pt 0 4pt}\np{text-align:justify;margin-bottom:8pt}\np.theme-body{text-indent:1.5em}\nul,ol{margin:6pt 0 8pt 20pt}\nli{margin-bottom:3pt}\nstrong{font-weight:bold}\nem{font-style:italic}\na{color:#1565c0;text-decoration:none}\na:hover{text-decoration:underline}\n\n/* ═══ Document Header ════════════════════════════════════════════════════ */\n.doc-header{text-align:center;border-bottom:3px double #1a3a5c;padding-bottom:14pt;margin-bottom:18pt}\n.doc-meta{font-size:9pt;color:#555;font-family:Arial,Helvetica,sans-serif;margin-top:8pt;line-height:1.6}\n.doc-meta .sep{margin:0 6pt;color:#bbb}\n\n/* ═══ Abstract Box ═══════════════════════════════════════════════════════ */\n.abstract-box{border:1px solid #c0cfe0;background:#f7fafd;padding:12pt 16pt;margin:16pt 0;border-radius:3pt}\n.abstract-box .abs-label{font-variant:small-caps;font-weight:bold;font-size:11pt;margin-right:6pt}\n.abstract-box p{text-indent:0;margin-bottom:0}\n\n/* ═══ Stats Row ══════════════════════════════════════════════════════════ */\n.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8pt;margin:16pt 0}\n@media(max-width:700px){.stats-row{grid-template-columns:repeat(3,1fr)}}\n.stat-card{background:#f0f4f8;border:1px solid #d0dae6;padding:8pt 6pt;text-align:center;border-radius:3pt}\n.stat-n{font-size:17pt;font-weight:bold;color:#1a3a5c;line-height:1.1}\n.stat-l{font-size:7.5pt;color:#666;text-transform:uppercase;font-family:Arial,sans-serif;margin-top:2pt}\n\n/* ═══ Table of Contents ══════════════════════════════════════════════════ */\n.toc{background:#f8f9fa;border:1px solid #dde;padding:14pt 18pt;margin:18pt 0;border-radius:3pt}\n.toc h2{font-size:11pt;border:none;text-transform:uppercase;letter-spacing:.06em;color:#333;margin-bottom:8pt}\n.toc ol{margin-left:16pt;font-size:10pt;line-height:1.9}\n.toc ol ol{margin-left:14pt;font-size:9.5pt}\n.toc a{color:#1565c0}\n\n/* ═══ Inline Citations ═══════════════════════════════════════════════════ */\na.cite{font-size:8.5pt;vertical-align:super;line-height:1;color:#1565c0;font-family:Arial,sans-serif;padding:0 1pt}\na.cite:hover{text-decoration:underline}\n\n/* ═══ Theme Blocks ═══════════════════════════════════════════════════════ */\n.theme-block{margin-bottom:18pt;padding-bottom:14pt;border-bottom:1px dotted #d0d0d0}\n.theme-block:last-child{border-bottom:none}\n.theme-body p{text-indent:1.5em}\n.insight{margin:8pt 0 4pt;padding:7pt 12pt;border-radius:2pt;font-size:10.5pt}\n.consensus-box{background:#e8f5e9;border-left:3pt solid #2e7d32}\n.contested-box{background:#fff3e0;border-left:3pt solid #e65100}\n.key-src{margin-top:6pt;font-size:9.5pt;color:#555;font-family:Arial,sans-serif}\n\n/* ═══ Taxonomy ═══════════════════════════════════════════════════════════ */\n.taxonomy-block{margin:10pt 0}\n.tax-desc{margin-bottom:8pt;font-style:italic}\n.tax-item{background:#f5f7fa;border:1px solid #dde;padding:7pt 10pt;margin-bottom:6pt;border-radius:2pt}\n.tax-name{font-weight:bold;color:#1a3a5c;margin-right:6pt}\n.tax-count{font-size:9pt;background:#1a3a5c;color:#fff;padding:1pt 5pt;border-radius:10pt;font-family:Arial,sans-serif}\n.tax-item p{margin-top:4pt;margin-bottom:0;text-indent:0;font-size:10.5pt}\n\n/* ═══ Research Gaps ══════════════════════════════════════════════════════ */\n.gap-card{background:#fffdf0;border:1px solid #f0d070;border-left:4pt solid #f0a500;padding:9pt 12pt;margin:8pt 0;border-radius:2pt}\n.gap-header{display:flex;align-items:center;gap:6pt;margin-bottom:5pt;flex-wrap:wrap}\n.gap-num{font-weight:bold;font-size:10.5pt;color:#7b5800}\n.gap-type-tag{background:#7b5800;color:#fff;font-size:8pt;padding:1pt 5pt;border-radius:10pt;font-family:Arial,sans-serif;text-transform:capitalize}\n.ev-strength{font-size:8pt;padding:1pt 5pt;border-radius:10pt;font-family:Arial,sans-serif}\n.ev-strong{background:#e8f5e9;color:#1b5e20}\n.ev-moderate{background:#fff3e0;color:#e65100}\n.ev-weak{background:#fce4ec;color:#c62828}\n.gap-text{text-indent:0;margin-bottom:4pt;font-size:10.5pt}\n.gap-rationale{text-indent:0;font-size:10pt;color:#555;margin-bottom:3pt}\n.gap-src{text-indent:0;font-size:9.5pt;color:#666;font-family:Arial,sans-serif}\n\n/* ═══ Future Directions ══════════════════════════════════════════════════ */\n.future-card{background:#f1f8e9;border-left:4pt solid #33691e;padding:8pt 12pt;margin:6pt 0;border-radius:2pt;font-size:10.5pt}\n\n/* ═══ Literature Matrix ══════════════════════════════════════════════════ */\n.table-wrap{overflow-x:auto;margin:10pt 0}\n.mt{width:100%;border-collapse:collapse;font-size:8pt;font-family:Arial,sans-serif}\n.mt th{background:#1a3a5c;color:#fff;padding:5pt 4pt;text-align:left;border:1px solid #0d2241;white-space:nowrap}\n.mt td{padding:4pt;border:1px solid #d0d0d0;vertical-align:top}\n.mt td.tc{font-size:7.5pt;max-width:160px}\n.mt td.lim-col{font-size:7.5pt;max-width:140px}\n.mt td.num-col{text-align:right;white-space:nowrap}\n.mt tr:nth-child(even){background:#f8f9fa}\n.mt tr:hover{background:#e8f0fb}\n.score-badge{font-size:8pt;font-weight:bold;border:1px solid;padding:0 3pt;border-radius:2pt}\n.score-na{color:#999}\n.cat-tag{background:#e8eaf6;color:#1a237e;font-size:7.5pt;padding:1pt 4pt;border-radius:2pt;white-space:nowrap}\n.oa-m{background:#1b5e20;color:#fff;font-size:7pt;padding:0 3pt;border-radius:2pt;font-family:Arial,sans-serif}\n\n/* ═══ Charts ═════════════════════════════════════════════════════════════ */\n.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20pt;margin:12pt 0}\n.chart-fig{background:#fafbfc;border:1px solid #e0e4ea;border-radius:4pt;padding:10pt;page-break-inside:avoid}\n.chart-svg{width:100%;height:auto;display:block}\nfigcaption{font-size:8.5pt;color:#555;text-align:center;margin-top:6pt;font-family:Arial,sans-serif;font-style:italic}\n\n/* ═══ Evidence Cards ═════════════════════════════════════════════════════ */\n.ev-card{border:1px solid #d0d8e4;border-radius:4pt;padding:10pt 12pt;margin:8pt 0;page-break-inside:avoid;background:#fafcff}\n.ev-card:target{background:#fffde7;border-color:#f0a500}\n.ev-card-head{display:flex;align-items:center;gap:5pt;flex-wrap:wrap;margin-bottom:5pt}\n.ev-ref{font-family:Arial,sans-serif;font-size:9pt;font-weight:bold;color:#1a3a5c;min-width:28pt}\n.ev-src-tag{font-size:7.5pt;padding:1pt 6pt;border-radius:10pt;color:#fff;font-family:Arial,sans-serif;white-space:nowrap}\n.oa-badge{background:#1b5e20;color:#fff;font-size:7.5pt;padding:1pt 5pt;border-radius:10pt;font-family:Arial,sans-serif}\n.ver-badge{background:#0d47a1;color:#fff;font-size:7.5pt;padding:1pt 5pt;border-radius:10pt;font-family:Arial,sans-serif}\n.ev-score{font-size:8pt;font-weight:bold;font-family:Arial,sans-serif;padding:0 3pt}\n.ev-title{font-size:10.5pt;font-weight:bold;margin-bottom:3pt;line-height:1.35}\n.ev-title a{color:#1a1a1a}\n.ev-title a:hover{color:#1565c0}\n.ev-meta{font-size:8.5pt;color:#555;font-family:Arial,sans-serif;margin-bottom:5pt;text-indent:0}\n.ev-abstract{font-size:9.5pt;color:#333;margin-bottom:5pt;text-indent:0;border-left:2pt solid #d0d8e4;padding-left:8pt;font-style:italic}\n.ev-section{font-size:9.5pt;margin-bottom:4pt;text-indent:0}\n.ev-section ul{margin:3pt 0 2pt 16pt}\n.ev-section li{margin-bottom:1pt}\n.ev-lim{color:#7b1a1a}\n.ev-fut{color:#1b4f1b}\n.doi-link{font-size:8pt;font-family:Arial,sans-serif}\n\n/* ═══ References ═════════════════════════════════════════════════════════ */\n.ref-entry{font-size:9.5pt;text-indent:-2em;padding-left:2em;margin-bottom:5pt;line-height:1.5;text-align:left;font-family:Arial,sans-serif}\n.ref-entry a{color:#1565c0}\n\n/* ═══ Disclosure ═════════════════════════════════════════════════════════ */\n.disclosure{background:#e8eaf6;border:1px solid #9fa8da;padding:10pt 14pt;margin:18pt 0;font-size:9pt;font-family:Arial,sans-serif;border-radius:3pt;line-height:1.5}\n.disclosure strong{color:#1a237e}\n\n/* ═══ Chapter break ══════════════════════════════════════════════════════ */\n.chapter-break{page-break-before:always}\n.unavail{color:#888;font-style:italic}\n</style>\n</head>\n<body>\n\n<!-- ══ DOCUMENT HEADER ══════════════════════════════════════════════════════ -->\n<header class=\"doc-header\">\n  <h1>${esc(topic)}</h1>\n  ${discipline ? `<div style=\"font-size:10pt;color:#555;font-style:italic;margin-bottom:4pt\">${esc(discipline)} Literature Review</div>` : ''}\n  <div class=\"doc-meta\">\n    <strong>Generated:</strong> ${generatedDate}\n    <span class=\"sep\">|</span>\n    <strong>Papers:</strong> ${papers.length}\n    <span class=\"sep\">|</span>\n    <strong>Year range:</strong> ${minYear}–${maxYear}\n    <span class=\"sep\">|</span>\n    <strong>Format:</strong> ${esc(data.citation_format || 'APA 7')}\n    <span class=\"sep\">|</span>\n    <strong>Report ID:</strong> <code>${esc(data.research_id)}</code>\n  </div>\n</header>\n\n<!-- ══ ABSTRACT ══════════════════════════════════════════════════════════════ -->\n<section id=\"abstract\">\n<div class=\"abstract-box\">\n  <p><span class=\"abs-label\">Abstract</span>${linkCite(synthesis.executive_summary || 'Literature review generated from ' + papers.length + ' papers retrieved from ' + sources.join(', ') + '. Synthesis and gap analysis conducted with AI assistance.')}</p>\n</div>\n</section>\n\n<!-- ══ KEY METRICS ═══════════════════════════════════════════════════════════ -->\n<div class=\"stats-row\" aria-label=\"Summary statistics\">\n  <div class=\"stat-card\"><div class=\"stat-n\">${papers.length}</div><div class=\"stat-l\">Papers</div></div>\n  <div class=\"stat-card\"><div class=\"stat-n\">${maxYear - minYear + 1}</div><div class=\"stat-l\">Year Span</div></div>\n  <div class=\"stat-card\"><div class=\"stat-n\">${sources.length}</div><div class=\"stat-l\">Databases</div></div>\n  <div class=\"stat-card\"><div class=\"stat-n\">${avgCitations.toLocaleString()}</div><div class=\"stat-l\">Avg. Citations</div></div>\n  <div class=\"stat-card\"><div class=\"stat-n\">${openAccessCount}</div><div class=\"stat-l\">Open Access</div></div>\n  <div class=\"stat-card\"><div class=\"stat-n\">${(synthesis.thematic_sections || []).length}</div><div class=\"stat-l\">Themes</div></div>\n</div>\n\n${buildToC()}\n\n<!-- ══ CHAPTER 1: INTRODUCTION ═══════════════════════════════════════════════ -->\n<section id=\"sec-intro\" ${isFullReport ? 'class=\"chapter-break\"' : ''}>\n${ch(1, 'Introduction', 'sec-intro-h')}\n<div>${linkCite(synthesis.introduction || 'Introduction not generated. See executive summary above.')}</div>\n</section>\n\n<!-- ══ CHAPTER 2: BACKGROUND ═════════════════════════════════════════════════ -->\n<section id=\"sec-bg\">\n${ch(2, 'Background &amp; Theoretical Framework', 'sec-bg-h')}\n<div>${linkCite(synthesis.background || 'Background section not generated.')}</div>\n${synthesis.taxonomy ? `<h3>Literature Taxonomy</h3>${taxonomyHTML()}` : ''}\n</section>\n\n<!-- ══ CHAPTER 3: THEMATIC ANALYSIS ══════════════════════════════════════════ -->\n<section id=\"sec-thematic\">\n${ch(3, 'Thematic Analysis', 'sec-thematic-h')}\n${thematicHTML()}\n</section>\n\n<!-- ══ CHAPTER 4: COMPARATIVE ANALYSIS ══════════════════════════════════════ -->\n<section id=\"sec-compare\">\n${ch(4, 'Comparative Analysis', 'sec-compare-h')}\n<div>${linkCite(synthesis.comparison_analysis || 'Comparative analysis not generated.')}</div>\n</section>\n\n<!-- ══ CHAPTER 5: METHODOLOGICAL TRENDS ══════════════════════════════════════ -->\n<section id=\"sec-methods\">\n${ch(5, 'Methodological Trends', 'sec-methods-h')}\n<div>${linkCite(synthesis.methodological_trends || 'Methodological trends not generated.')}</div>\n</section>\n\n<!-- ══ CHAPTER 6: RESEARCH GAPS ══════════════════════════════════════════════ -->\n<section id=\"sec-gaps\">\n${ch(6, 'Research Gaps', 'sec-gaps-h')}\n${gaps.overall_assessment ? `<p>${linkCite(gaps.overall_assessment)}</p>` : ''}\n${gapsHTML()}\n${gaps.confidence_note ? `<p class=\"unavail\" style=\"margin-top:8pt;font-size:10pt\">${esc(gaps.confidence_note)}</p>` : ''}\n</section>\n\n<!-- ══ CHAPTER 7: FUTURE DIRECTIONS ══════════════════════════════════════════ -->\n<section id=\"sec-future\">\n${ch(7, 'Future Directions', 'sec-future-h')}\n${(synthesis.future_directions || []).length\n  ? (synthesis.future_directions || []).map((d, i) => `<div class=\"future-card\"><strong>Direction ${i+1}:</strong> ${linkCite(d)}</div>`).join('\\n')\n  : '<p class=\"unavail\">Future directions not generated.</p>'}\n</section>\n\n<!-- ══ CHAPTER 8: CONCLUSION ══════════════════════════════════════════════════ -->\n<section id=\"sec-conclusion\">\n${ch(8, 'Conclusion', 'sec-conclusion-h')}\n<div>${linkCite(synthesis.conclusion || 'Conclusion not generated.')}</div>\n${synthesis.confidence_statement ? `<p style=\"margin-top:10pt;font-style:italic;font-size:10.5pt;color:#555\">${esc(synthesis.confidence_statement)}</p>` : ''}\n</section>\n\n<!-- ══ REFERENCES ══════════════════════════════════════════════════════════════ -->\n<section id=\"sec-refs\" class=\"${isFullReport ? 'chapter-break' : ''}\">\n<h2>References</h2>\n<div>\n${citations.map((c, i) =>\n  `<p class=\"ref-entry\" id=\"ref-${i+1}\">${esc(c.citation)}${c.doi ? ` <a href=\"https://doi.org/${esc(c.doi)}\" target=\"_blank\" rel=\"noopener\" class=\"doi-link\">↗</a>` : ''}</p>`\n).join('\\n')}\n</div>\n</section>\n\n<!-- ══ APPENDIX A: LITERATURE MATRIX ══════════════════════════════════════════ -->\n<section id=\"appA\" class=\"${isFullReport ? 'chapter-break' : ''}\">\n<h2>Appendix A — Literature Matrix</h2>\n<p style=\"font-size:9.5pt;color:#555;margin-bottom:8pt;text-indent:0\">Comparative table for ${papers.length} papers. Click <strong>[N]</strong> in Ref column to jump to the evidence card. Scores are AI estimates (1–10). OA = Open Access.</p>\n${matrixHTML()}\n</section>\n\n<!-- ══ APPENDIX B: EVIDENCE CARDS ═════════════════════════════════════════════ -->\n<section id=\"appB\" class=\"${isFullReport ? 'chapter-break' : ''}\">\n<h2>Appendix B — Evidence Cards</h2>\n<p style=\"font-size:9.5pt;color:#555;margin-bottom:10pt;text-indent:0\">Individual evidence cards for each paper. Inline citations in the main text link here. Click titles to open source pages. DOI links are verified where available.</p>\n${evidenceCards()}\n</section>\n\n<!-- ══ APPENDIX C: BIBLIOMETRIC CHARTS ════════════════════════════════════════ -->\n<section id=\"appC\" class=\"${isFullReport ? 'chapter-break' : ''}\">\n<h2>Appendix C — Bibliometric Analysis</h2>\n<p style=\"font-size:9.5pt;color:#555;margin-bottom:10pt;text-indent:0\">Auto-generated visualisations derived from the retrieved paper metadata. All charts are SVG and print cleanly.</p>\n<div class=\"charts-grid\">\n${yearHistogramSVG()}\n${sourceBarSVG()}\n${categoryBarSVG()}\n${scatterSVG()}\n${citationHistSVG()}\n</div>\n</section>\n\n<!-- ══ AI DISCLOSURE ═══════════════════════════════════════════════════════════ -->\n<div class=\"disclosure no-print\">\n  <strong>AI Use Disclosure</strong><br>\n  This literature review was generated with AI assistance using <strong>${esc(aiDisclosure.model || aiDisclosure.tool || 'an AI language model')}</strong>.\n  Databases queried: ${esc(sources.join(', ') || 'multiple')}. AI-assisted activities: ${esc((aiDisclosure.activities || []).join(', ') || 'query refinement, paper analysis, synthesis, citation formatting')}.\n  <br><strong>Important:</strong> ${esc(aiDisclosure.limitations || 'All citations must be independently verified before academic use. This report is based on abstract-only analysis. Scores are AI estimates. The researcher is responsible for evaluating accuracy and completeness.')}\n  ${feedback ? `<br><strong>Reviewer feedback:</strong> ${esc(feedback)}` : ''}\n</div>\n\n</body>\n</html>`;\n\nreturn {\n  json: {\n    html_content: html,\n    topic: data.topic,\n    research_id: data.research_id,\n    total_papers: papers.length,\n    generated_at: new Date().toISOString()\n  }\n};\n"
+      },
+      "id": "a5b6c7d8-e9f0-1234-abcd-345678901234",
+      "name": "Generate HTML Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Assemble Complete Review Data').first().json;\nconst validateData = $('Validate & Configure').first().json;\nconst synthesis = data.synthesis || {};\nconst papers = data.papers || [];\nconst citations = data.citations || [];\nconst gaps = data.gaps || {};\nconst feedback = $('Human Review Gate').first().json.body?.feedback || '';\nconst isFullReport = (validateData.report_format || 'Standard Summary').includes('Full');\n\nconst topic = data.topic || 'Literature Review';\nconst generatedAt = new Date().toISOString();\nconst sources = [...new Set(papers.map(p => p.source).filter(Boolean))];\nconst years = papers.map(p => parseInt(p.year)).filter(y => !isNaN(y));\nconst minYear = years.length > 0 ? Math.min(...years) : '—';\nconst maxYear = years.length > 0 ? Math.max(...years) : '—';\n\n// Strip HTML tags that may appear in linkCite output for Markdown\nfunction stripHtml(str) {\n  if (!str) return '';\n  return str.replace(/<[^>]+>/g, '');\n}\n\nfunction h(level, text) {\n  return '#'.repeat(level) + ' ' + text;\n}\n\nlet md = '';\n\n// ── Front matter ──────────────────────────────────────────────────────────────\nmd += `# ${topic}\\n\\n`;\nmd += `> **Literature Review** | Generated: ${generatedAt.substring(0,10)}\\n`;\nmd += `> Papers: **${papers.length}** | Databases: ${sources.join(', ')} | Years: ${minYear}–${maxYear} | Format: ${data.citation_format || 'APA 7'}\\n`;\nmd += `> Research ID: \\`${data.research_id || 'unknown'}\\`\\n\\n`;\nmd += `---\\n\\n`;\n\n// ── Abstract ──────────────────────────────────────────────────────────────────\nmd += `## Abstract\\n\\n`;\nmd += stripHtml(synthesis.executive_summary || `Literature review of ${papers.length} papers from ${sources.join(', ')}.`) + '\\n\\n';\nmd += `---\\n\\n`;\n\n// ── Table of Contents ─────────────────────────────────────────────────────────\nif (isFullReport) {\n  md += `## Table of Contents\\n\\n`;\n  md += `1. [Introduction](#introduction)\\n`;\n  md += `2. [Background & Theoretical Framework](#background--theoretical-framework)\\n`;\n  md += `3. [Thematic Analysis](#thematic-analysis)\\n`;\n  const themes = synthesis.thematic_sections || [];\n  themes.forEach((s, i) => {\n    md += `   ${i+1}. [${s.title || 'Theme ' + (i+1)}](#${(s.title || 'theme-' + (i+1)).toLowerCase().replace(/\\s+/g,'-').replace(/[^a-z0-9-]/g,'')})\\n`;\n  });\n  md += `4. [Comparative Analysis](#comparative-analysis)\\n`;\n  md += `5. [Methodological Trends](#methodological-trends)\\n`;\n  md += `6. [Research Gaps](#research-gaps)\\n`;\n  md += `7. [Future Directions](#future-directions)\\n`;\n  md += `8. [Conclusion](#conclusion)\\n`;\n  md += `9. [References](#references)\\n`;\n  md += `10. [Appendix A — Literature Matrix](#appendix-a--literature-matrix)\\n`;\n  md += `11. [Appendix B — Evidence Cards](#appendix-b--evidence-cards)\\n\\n`;\n  md += `---\\n\\n`;\n}\n\n// ── Chapter 1: Introduction ───────────────────────────────────────────────────\nif (isFullReport) md += `## Chapter 1 — Introduction\\n\\n`;\nelse md += `## Introduction\\n\\n`;\nmd += stripHtml(synthesis.introduction || 'Introduction not generated.') + '\\n\\n';\n\n// ── Chapter 2: Background ─────────────────────────────────────────────────────\nif (isFullReport) md += `## Chapter 2 — Background & Theoretical Framework\\n\\n`;\nelse md += `## Background\\n\\n`;\nmd += stripHtml(synthesis.background || 'Background not generated.') + '\\n\\n';\n\nif (synthesis.taxonomy?.categories?.length) {\n  md += `### Literature Taxonomy\\n\\n`;\n  md += synthesis.taxonomy.description ? synthesis.taxonomy.description + '\\n\\n' : '';\n  synthesis.taxonomy.categories.forEach(c => {\n    md += `**${c.name}** (${c.paper_count || 0} papers): ${c.description}\\n\\n`;\n  });\n}\n\n// ── Chapter 3: Thematic Analysis ─────────────────────────────────────────────\nif (isFullReport) md += `## Chapter 3 — Thematic Analysis\\n\\n`;\nelse md += `## Thematic Analysis\\n\\n`;\n\nconst themes = synthesis.thematic_sections || [];\nif (!themes.length) {\n  md += `*Thematic analysis not available for ${papers.length} retrieved papers.*\\n\\n`;\n} else {\n  themes.forEach((s, i) => {\n    md += `### ${isFullReport ? '3.' + (i+1) + ' ' : ''}${s.title || 'Theme ' + (i+1)}\\n\\n`;\n    md += stripHtml(s.content || '') + '\\n\\n';\n    if (s.consensus_view) md += `> **Consensus:** ${stripHtml(s.consensus_view)}\\n\\n`;\n    if (s.contested_areas) md += `> **Contested:** ${stripHtml(s.contested_areas)}\\n\\n`;\n    if (s.key_papers?.length) md += `**Key sources:** ${s.key_papers.slice(0,4).map(t => `*${t}*`).join('; ')}\\n\\n`;\n  });\n}\n\n// ── Chapter 4: Comparative Analysis ──────────────────────────────────────────\nif (isFullReport) md += `## Chapter 4 — Comparative Analysis\\n\\n`;\nelse md += `## Comparative Analysis\\n\\n`;\nmd += stripHtml(synthesis.comparison_analysis || 'Comparative analysis not generated.') + '\\n\\n';\n\n// ── Chapter 5: Methodological Trends ─────────────────────────────────────────\nif (isFullReport) md += `## Chapter 5 — Methodological Trends\\n\\n`;\nelse md += `## Methodological Trends\\n\\n`;\nmd += stripHtml(synthesis.methodological_trends || 'Methodological trends not generated.') + '\\n\\n';\n\n// ── Chapter 6: Research Gaps ──────────────────────────────────────────────────\nif (isFullReport) md += `## Chapter 6 — Research Gaps\\n\\n`;\nelse md += `## Research Gaps\\n\\n`;\nif (gaps.overall_assessment) md += stripHtml(gaps.overall_assessment) + '\\n\\n';\n\nconst allGaps = [...(gaps.empirical_gaps || []), ...(gaps.theoretical_gaps || []), ...(gaps.methodological_gaps || [])];\nconst gapList = allGaps.length > 0 ? allGaps : (gaps.priority_gaps || synthesis.research_gaps || []);\n\nif (!gapList.length) {\n  md += '*No specific research gaps identified. Full-text review recommended.*\\n\\n';\n} else {\n  gapList.forEach((g, i) => {\n    const gapText = typeof g === 'string' ? g : (g.gap || JSON.stringify(g));\n    const gType = typeof g === 'object' && g.type ? ` *(${g.type})*` : '';\n    const strength = typeof g === 'object' && g.evidence_strength ? ` [${g.evidence_strength}]` : '';\n    md += `**Gap ${i+1}${gType}${strength}:** ${stripHtml(gapText)}\\n\\n`;\n    if (typeof g === 'object' && g.rationale) md += `  *Rationale:* ${stripHtml(g.rationale)}\\n\\n`;\n  });\n}\n\n// ── Chapter 7: Future Directions ──────────────────────────────────────────────\nif (isFullReport) md += `## Chapter 7 — Future Directions\\n\\n`;\nelse md += `## Future Directions\\n\\n`;\n(synthesis.future_directions || []).forEach((d, i) => {\n  md += `${i+1}. ${stripHtml(d)}\\n`;\n});\nif (!(synthesis.future_directions || []).length) md += '*Future directions not generated.*\\n';\nmd += '\\n';\n\n// ── Chapter 8: Conclusion ─────────────────────────────────────────────────────\nif (isFullReport) md += `## Chapter 8 — Conclusion\\n\\n`;\nelse md += `## Conclusion\\n\\n`;\nmd += stripHtml(synthesis.conclusion || 'Conclusion not generated.') + '\\n\\n';\nif (synthesis.confidence_statement) {\n  md += `> *${synthesis.confidence_statement}*\\n\\n`;\n}\n\nmd += `---\\n\\n`;\n\n// ── References ────────────────────────────────────────────────────────────────\nmd += `## References\\n\\n`;\ncitations.forEach((c, i) => {\n  md += `${i+1}. ${c.citation}${c.doi ? ` https://doi.org/${c.doi}` : ''}\\n\\n`;\n});\n\nmd += `---\\n\\n`;\n\n// ── Appendix A: Literature Matrix ─────────────────────────────────────────────\nmd += `## Appendix A — Literature Matrix\\n\\n`;\nmd += `| # | Authors | Year | Title | Category | Inn. | Rel. | Citations |\\n`;\nmd += `|---|---------|------|-------|----------|------|------|----------|\\n`;\npapers.slice(0, 50).forEach((p, i) => {\n  const auth = (p.authors || '').split(',')[0].trim() + ((p.authors || '').includes(',') ? ' et al.' : '');\n  const title = (p.title || '').substring(0, 55) + ((p.title || '').length > 55 ? '…' : '');\n  const cat = p.analysis?.paper_category || '—';\n  const inn = p.analysis?.innovation_score != null ? p.analysis.innovation_score : '—';\n  const rel = p.analysis?.relevance_score != null ? p.analysis.relevance_score : '—';\n  const cit = p.citations || 0;\n  md += `| [${i+1}] | ${auth} | ${p.year || '—'} | ${title} | ${cat} | ${inn} | ${rel} | ${cit} |\\n`;\n});\nmd += '\\n';\n\n// ── Appendix B: Evidence Cards ────────────────────────────────────────────────\nmd += `## Appendix B — Evidence Cards\\n\\n`;\npapers.slice(0, 50).forEach((p, i) => {\n  const a = p.analysis || {};\n  md += `### [${i+1}] ${p.title || 'Unknown'}\\n\\n`;\n  md += `**Authors:** ${p.authors || '—'} · **Year:** ${p.year || '—'} · **Source:** ${p.source || '—'}`;\n  if (p.journal) md += ` · **Journal:** ${p.journal}`;\n  if (p.citations) md += ` · **Citations:** ${p.citations.toLocaleString()}`;\n  if (p.doi) md += ` · **DOI:** https://doi.org/${p.doi}`;\n  if (p.url) md += ` · [Open paper](${p.url})`;\n  md += '\\n\\n';\n  if (p.abstract && p.abstract !== 'Abstract not available') {\n    md += `> ${p.abstract.substring(0, 400)}${p.abstract.length > 400 ? '…' : ''}\\n\\n`;\n  }\n  if (a.key_findings?.length) {\n    md += `**Key findings:**\\n`;\n    a.key_findings.slice(0,4).forEach(f => { md += `- ${f}\\n`; });\n    md += '\\n';\n  }\n  if (a.methodology) md += `**Methodology:** ${a.methodology}\\n\\n`;\n  if (a.limitations?.length) md += `**Limitations:** ${a.limitations[0]}\\n\\n`;\n  if (a.innovation_score != null) md += `**Scores:** Innovation ${a.innovation_score}/10 · Relevance ${a.relevance_score || '—'}/10\\n\\n`;\n  md += '---\\n\\n';\n});\n\n// ── Footer ────────────────────────────────────────────────────────────────────\nmd += `\\n---\\n\\n`;\nmd += `> **AI Disclosure:** This review was generated with AI assistance. All citations must be independently verified before academic use. Analysis is based on abstracts only — full-text review is recommended for publication-grade work.\\n`;\nif (feedback) md += `> **Reviewer feedback:** ${feedback}\\n`;\n\nreturn { json: { markdown_content: md, topic: data.topic, research_id: data.research_id } };\n"
+      },
+      "id": "b6c7d8e9-f0a1-2345-bcde-456789012345",
+      "name": "Generate Markdown Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Assemble Complete Review Data').first().json;\nconst feedback = $('Human Review Gate').first().json.body?.feedback || '';\nconst exportData = {\n  _metadata: { export_version: '2.0.0', tool: 'Research Intelligence n8n', generated_at: new Date().toISOString() },\n  research_id: data.research_id,\n  topic: data.topic,\n  config: data.config,\n  search_summary: { total_papers: data.total_papers, sources_queried: data.sources_queried, year_range: data.year_range, keywords: data.keywords },\n  papers: data.papers,\n  synthesis: data.synthesis,\n  gaps: data.gaps,\n  citations: data.citations,\n  matrix: data.matrix,\n  ai_disclosure: data.ai_disclosure,\n  reviewer_feedback: feedback\n};\nreturn { json: { json_content: JSON.stringify(exportData, null, 2), research_id: data.research_id, topic: data.topic } };"
+      },
+      "id": "c7d8e9f0-a1b2-3456-cdef-567890123456",
+      "name": "Generate JSON Export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const htmlNode = $('Generate HTML Report').first().json;\nconst mdNode = $('Generate Markdown Report').first().json;\nconst jsonNode = $('Generate JSON Export').first().json;\nconst researchId = htmlNode.research_id || 'output';\n\nconst htmlBuf = Buffer.from(htmlNode.html_content || '', 'utf8');\nconst mdBuf = Buffer.from(mdNode.markdown_content || '', 'utf8');\nconst jsonBuf = Buffer.from(jsonNode.json_content || '', 'utf8');\n\nreturn {\n  json: {\n    research_id: researchId,\n    topic: htmlNode.topic,\n    total_papers: htmlNode.total_papers\n  },\n  binary: {\n    html_file: { data: htmlBuf.toString('base64'), mimeType: 'text/html', fileName: researchId + '_review.html' },\n    markdown_file: { data: mdBuf.toString('base64'), mimeType: 'text/markdown', fileName: researchId + '_review.md' },\n    json_file: { data: jsonBuf.toString('base64'), mimeType: 'application/json', fileName: researchId + '_data.json' }\n  }\n};"
+      },
+      "id": "d8e9f0a1-b2c3-4567-defa-678901234567",
+      "name": "Convert Reports to Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3900,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "={{ ($env.OUTPUT_DIR || '/output') + '/' + $json.research_id + '_review.html' }}",
+        "options": {},
+        "dataPropertyName": "html_file"
+      },
+      "id": "e9f0a1b2-c3d4-5678-efab-789012345678",
+      "name": "Save HTML Report",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        4120,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "={{ ($env.OUTPUT_DIR || '/output') + '/' + $json.research_id + '_review.md' }}",
+        "dataPropertyName": "markdown_file",
+        "options": {}
+      },
+      "id": "f0a1b2c3-d4e5-6789-fabc-890123456789",
+      "name": "Save Markdown Report",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        4120,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "fileName": "={{ ($env.OUTPUT_DIR || '/output') + '/' + $json.research_id + '_data.json' }}",
+        "dataPropertyName": "json_file",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-901234567890",
+      "name": "Save JSON Export",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        4120,
+        620
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const researchId = $('Convert Reports to Files').first().json.research_id || 'unknown';\nconst topic = $('Convert Reports to Files').first().json.topic || 'unknown';\nconst totalPapers = $('Convert Reports to Files').first().json.total_papers || 0;\nconst outputDir = $env.OUTPUT_DIR || '/output';\nconsole.log('Research complete. Research ID:', researchId, '| Papers:', totalPapers, '| Topic:', topic);\nreturn {\n  json: {\n    status: 'completed',\n    research_id: researchId,\n    topic,\n    total_papers: totalPapers,\n    output_files: [\n      outputDir + '/' + researchId + '_review.html',\n      outputDir + '/' + researchId + '_review.md',\n      outputDir + '/' + researchId + '_data.json'\n    ],\n    completed_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-012345678901",
+      "name": "Workflow Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4340,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { status: 'rejected', research_id: $('Assemble Complete Review Data').first().json.research_id, reason: $input.first().json.body?.feedback || 'No reason provided', rejected_at: new Date().toISOString() } };"
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789013",
+      "name": "Workflow Rejected",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "id": "d1e2f3a4-b5c6-7890-defa-012345678901",
+      "name": "Merge for Delivery",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        4560,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const validateData = $('Validate & Configure').first().json;\nconst reviewData = $('Assemble Complete Review Data').first().json;\nconst htmlContent = $('Generate HTML Report').first().json.html_content || '';\nconst mdContent = $('Generate Markdown Report').first().json.markdown_content || '';\n\nconst recipientEmail = validateData.recipient_email || '';\nconst deliveryMethod = validateData.delivery_method || 'Save to Server Only';\nconst topic = reviewData.topic || validateData.topic || 'Research Review';\nconst researchId = reviewData.research_id || 'unknown';\nconst totalPapers = reviewData.total_papers || 0;\nconst generatedAt = reviewData.generated_at || new Date().toISOString();\nconst docTitle = 'Literature Review: ' + topic;\n\nconst shouldGoogleDocs = deliveryMethod.includes('Google Docs');\nconst shouldEmail = deliveryMethod.includes('Email') || shouldGoogleDocs;\n\nreturn {\n  json: {\n    recipient_email: recipientEmail,\n    delivery_method: deliveryMethod,\n    topic: topic,\n    research_id: researchId,\n    doc_title: docTitle,\n    html_content: htmlContent,\n    markdown_content: mdContent,\n    email_body: '',\n    total_papers: totalPapers,\n    generated_at: generatedAt,\n    should_google_docs: shouldGoogleDocs,\n    should_email: shouldEmail,\n    document_id: null,\n    google_doc_url: null\n  }\n};"
+      },
+      "id": "e2f3a4b5-c6d7-8901-efab-123456789012",
+      "name": "Compile Delivery Package",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4760,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "folderId": "root",
+        "title": "={{ $json.doc_title }}"
+      },
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "gdocs-credential",
+          "name": "Google Docs OAuth2 API"
+        }
+      },
+      "id": "f3a4b5c6-d7e8-9012-fabc-234567890123",
+      "name": "Create Google Doc",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        4960,
+        320
+      ],
+      "disabled": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://docs.googleapis.com/v1/documents/{{ $('Create Google Doc').first().json.documentId }}:batchUpdate",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ (function(){\n  var md = $('Compile Delivery Package').first().json.markdown_content || '';\n  // Split into chunks of max 40000 chars (Docs API limit per request)\n  var chunks = [];\n  var chunkSize = 40000;\n  for(var i = 0; i < md.length; i += chunkSize) {\n    chunks.push({ insertText: { location: { index: chunks.length === 0 ? 1 : 999999 }, text: md.slice(i, i + chunkSize) } });\n  }\n  if(!chunks.length) chunks = [{ insertText: { location: { index: 1 }, text: 'No content available.' } }];\n  return JSON.stringify({ requests: [chunks[0]] });\n})() }}",
+        "options": {
+          "neverError": true
+        }
+      },
+      "credentials": {
+        "oAuth2Api": {
+          "id": "gdocs-credential",
+          "name": "Google Docs OAuth2 API"
+        }
+      },
+      "id": "a4b5c6d7-e8f9-0123-abcd-345678901234",
+      "name": "Add Content to Google Doc",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5160,
+        320
+      ],
+      "disabled": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $('Create Google Doc').first().json.documentId }}/permissions",
+        "authentication": "oAuth2",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {role:'writer',type:'user',emailAddress: $('Compile Delivery Package').first().json.recipient_email} }}",
+        "options": {
+          "neverError": true
+        }
+      },
+      "credentials": {
+        "oAuth2Api": {
+          "id": "gdocs-credential",
+          "name": "Google Docs OAuth2 API"
+        }
+      },
+      "id": "b5c6d7e8-f9a0-1234-bcde-456789012345",
+      "name": "Share Google Doc with Recipient",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5360,
+        320
+      ],
+      "disabled": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const compileData = $('Compile Delivery Package').first().json;\nconst googleDocId = $('Create Google Doc').first()?.json?.documentId || null;\nconst googleDocUrl = googleDocId\n  ? 'https://docs.google.com/document/d/' + googleDocId + '/edit?usp=sharing'\n  : null;\n\nconst docSection = googleDocUrl\n  ? '<div style=\"background:#e8f5e9;padding:16px;border-radius:8px;margin:16px 0;\"><p style=\"margin:0\"><strong>📄 Open in Google Docs:</strong> <a href=\"' + googleDocUrl + '\">' + googleDocUrl + '</a></p></div>'\n  : '';\n\nconst emailBody = '<html><body style=\"font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px\">'\n  + '<h1 style=\"color:#1a1a1a;border-bottom:3px solid #4CAF50;padding-bottom:12px\">Literature Review Complete</h1>'\n  + '<table style=\"width:100%;border-collapse:collapse;margin-bottom:24px\">'\n  + '<tr><td style=\"padding:8px;color:#555\"><strong>Topic</strong></td><td style=\"padding:8px\">' + compileData.topic + '</td></tr>'\n  + '<tr style=\"background:#f9f9f9\"><td style=\"padding:8px;color:#555\"><strong>Papers Analyzed</strong></td><td style=\"padding:8px\">' + compileData.total_papers + '</td></tr>'\n  + '<tr><td style=\"padding:8px;color:#555\"><strong>Research ID</strong></td><td style=\"padding:8px\"><code>' + compileData.research_id + '</code></td></tr>'\n  + '<tr style=\"background:#f9f9f9\"><td style=\"padding:8px;color:#555\"><strong>Generated</strong></td><td style=\"padding:8px\">' + new Date(compileData.generated_at).toLocaleString() + '</td></tr>'\n  + '</table>'\n  + docSection\n  + '<hr style=\"margin:24px 0\"/>'\n  + compileData.html_content\n  + '</body></html>';\n\nreturn {\n  json: {\n    ...compileData,\n    document_id: googleDocId,\n    google_doc_url: googleDocUrl,\n    email_body: emailBody\n  }\n};"
+      },
+      "id": "c6d7e8f9-a0b1-2345-cdef-567890123456",
+      "name": "Prepare Final Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5560,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM_EMAIL || 'research-ai@localhost' }}",
+        "toEmail": "={{ $json.recipient_email }}",
+        "subject": "=Your Literature Review is Ready: {{ $json.topic }}",
+        "emailFormat": "html",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credential",
+          "name": "SMTP"
+        }
+      },
+      "id": "d7e8f9a0-b1c2-3456-defa-678901234567",
+      "name": "Send Email Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        5760,
+        460
+      ],
+      "disabled": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst deliveries = [];\nif (data.google_doc_url) deliveries.push('Google Docs: ' + data.google_doc_url);\nif (data.email_sent) deliveries.push('Email sent to: ' + data.recipient_email);\nif (!deliveries.length) deliveries.push('Saved to server only');\n\nconsole.log('Delivery complete for research_id:', data.research_id);\nconsole.log('Deliveries:', deliveries.join(' | '));\n\nreturn {\n  json: {\n    research_id: data.research_id,\n    topic: data.topic,\n    total_papers: data.total_papers,\n    recipient_email: data.recipient_email,\n    delivery_method: data.delivery_method,\n    google_doc_url: data.google_doc_url,\n    email_sent_to: data.recipient_email,\n    deliveries: deliveries,\n    completed_at: new Date().toISOString()\n  }\n};"
+      },
+      "id": "e8f9a0b1-c2d3-4567-efab-789012345678",
+      "name": "Delivery Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5960,
+        460
+      ]
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Validate & Configure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Configure": {
+      "main": [
+        [
+          {
+            "node": "Refine Research Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refine Research Query": {
+      "main": [
+        [
+          {
+            "node": "Parse Query Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Query Output": {
+      "main": [
+        [
+          {
+            "node": "ArXiv Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CrossRef Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "PubMed esearch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OpenAlex Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Semantic Scholar Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ArXiv Search": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CrossRef Search": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "PubMed esearch": {
+      "main": [
+        [
+          {
+            "node": "PubMed eSummary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PubMed eSummary": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "OpenAlex Search": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Semantic Scholar Search": {
+      "main": [
+        [
+          {
+            "node": "Merge Sources",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Merge Sources": {
+      "main": [
+        [
+          {
+            "node": "Aggregate & Deduplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate & Deduplicate": {
+      "main": [
+        [
+          {
+            "node": "Split Papers for Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Papers for Processing": {
+      "main": [
+        [
+          {
+            "node": "Analyze Paper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Paper": {
+      "main": [
+        [
+          {
+            "node": "Merge Paper + Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Paper + Analysis": {
+      "main": [
+        [
+          {
+            "node": "Collect All Analyzed Papers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect All Analyzed Papers": {
+      "main": [
+        [
+          {
+            "node": "Synthesize Literature",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Identify Research Gaps",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Citations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Literature Matrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Synthesize Literature": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Outputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify Research Gaps": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Outputs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Generate Citations": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Outputs",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Build Literature Matrix": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Outputs",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge Final Outputs": {
+      "main": [
+        [
+          {
+            "node": "Assemble Complete Review Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Complete Review Data": {
+      "main": [
+        [
+          {
+            "node": "Human Review Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Review Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Status": {
+      "main": [
+        [
+          {
+            "node": "Generate HTML Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Workflow Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Generate Markdown Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Markdown Report": {
+      "main": [
+        [
+          {
+            "node": "Generate JSON Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate JSON Export": {
+      "main": [
+        [
+          {
+            "node": "Convert Reports to Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Reports to Files": {
+      "main": [
+        [
+          {
+            "node": "Save HTML Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save Markdown Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save JSON Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Merge for Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Markdown Report": {
+      "main": [
+        [
+          {
+            "node": "Merge for Delivery",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Save JSON Export": {
+      "main": [
+        [
+          {
+            "node": "Merge for Delivery",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Workflow Complete": {
+      "main": []
+    },
+    "Workflow Rejected": {
+      "main": []
+    },
+    "Merge for Delivery": {
+      "main": [
+        [
+          {
+            "node": "Compile Delivery Package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Delivery Package": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Add Content to Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Content to Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Share Google Doc with Recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share Google Doc with Recipient": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Final Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Report": {
+      "main": [
+        [
+          {
+            "node": "Delivery Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delivery Complete": {
+      "main": [
+        [
+          {
+            "node": "Workflow Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "ri-n8n-v2-0-0-20261120",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "research-intelligence-n8n-v2"
+  },
+  "id": "research-orchestrator-v2",
+  "tags": [
+    {
+      "name": "Research Intelligence"
+    },
+    {
+      "name": "Literature Review"
+    },
+    {
+      "name": "v2.0.0"
+    }
+  ]
+}

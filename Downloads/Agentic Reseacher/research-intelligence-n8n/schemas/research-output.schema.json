@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "research-output.schema.json",
+  "title": "ResearchOutput",
+  "description": "Complete research output record produced by the Research Intelligence orchestrator.",
+  "type": "object",
+  "required": ["researchId", "topic", "generated_at", "papers", "synthesis"],
+  "properties": {
+    "researchId": {
+      "type": "string",
+      "description": "Unique identifier for this research run.",
+      "examples": ["ri_1700000000000_a1b2c3"]
+    },
+    "topic": {
+      "type": "string",
+      "description": "The original research topic as entered by the researcher."
+    },
+    "config": {
+      "type": "object",
+      "description": "Configuration used for this research run.",
+      "properties": {
+        "discipline": { "type": "string" },
+        "depth": { "type": "string" },
+        "paperLimit": { "type": "integer" },
+        "citationFormat": { "type": "string" },
+        "dateFrom": { "type": ["integer", "string"] },
+        "dateTo": { "type": ["integer", "string"] },
+        "language": { "type": "string" },
+        "startedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this output was assembled."
+    },
+    "sources_queried": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of database names that returned results.",
+      "examples": [["ArXiv", "CrossRef", "OpenAlex", "Semantic Scholar"]]
+    },
+    "total_papers": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of papers included in the analysis."
+    },
+    "papers": {
+      "type": "array",
+      "description": "Array of analysed paper records (see source.schema.json).",
+      "items": { "$ref": "source.schema.json" }
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "AI-generated keywords for this research topic."
+    },
+    "sub_topics": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "AI-generated sub-topics identified from the research topic."
+    },
+    "synthesis": {
+      "type": "object",
+      "description": "AI-generated literature synthesis.",
+      "properties": {
+        "executive_summary": { "type": "string" },
+        "introduction": { "type": "string" },
+        "background": { "type": "string" },
+        "taxonomy": { "type": "object" },
+        "thematic_sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "content": { "type": "string" },
+              "key_papers": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "comparison_analysis": { "type": "string" },
+        "conclusion": { "type": "string" },
+        "total_papers_surveyed": { "type": "integer" },
+        "year_range": { "type": "string" }
+      }
+    },
+    "gaps": {
+      "type": "object",
+      "description": "Typed research gaps identified from the literature.",
+      "properties": {
+        "empirical_gaps": { "type": "array" },
+        "theoretical_gaps": { "type": "array" },
+        "methodological_gaps": { "type": "array" },
+        "contextual_gaps": { "type": "array" },
+        "temporal_gaps": { "type": "array" },
+        "priority_gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "gap": { "type": "string" },
+              "type": { "type": "string" },
+              "rationale": { "type": "string" },
+              "evidence_strength": {
+                "type": "string",
+                "enum": ["strong", "moderate", "weak"]
+              }
+            }
+          }
+        },
+        "overall_assessment": { "type": "string" }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "description": "Formatted citations in the requested style.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": { "type": "integer" },
+          "citation": { "type": "string" },
+          "doi": { "type": "string" },
+          "title": { "type": "string" }
+        }
+      }
+    },
+    "matrix": {
+      "type": "object",
+      "description": "Literature comparison matrix.",
+      "properties": {
+        "matrix_rows": { "type": "array" },
+        "thematic_groupings": { "type": "array" },
+        "methodology_distribution": { "type": "object" },
+        "temporal_distribution": { "type": "object" }
+      }
+    },
+    "ai_disclosure": {
+      "type": "object",
+      "description": "Information about AI assistance for disclosure purposes.",
+      "properties": {
+        "provider_url": { "type": "string" },
+        "model": { "type": "string" },
+        "activities_assisted": { "type": "array", "items": { "type": "string" } },
+        "human_approval_obtained": { "type": "boolean" },
+        "generated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/research-intelligence-n8n/schemas/source.schema.json",
+  "title": "Normalized Source",
+  "description": "A normalized academic paper or source record. All sources from ArXiv, CrossRef, PubMed, OpenAlex, and Semantic Scholar are normalized to this schema.",
+  "type": "object",
+  "required": ["id", "title", "source"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Internal workflow-generated identifier (e.g., p_abc123def). Not a persistent global ID.",
+      "pattern": "^p_[a-z0-9]{9}$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Full paper title as retrieved from the source database.",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "authors": {
+      "type": "string",
+      "description": "Comma-separated author names as retrieved. May be truncated for papers with many authors.",
+      "examples": ["Smith, J., Jones, A., Williams, B."]
+    },
+    "year": {
+      "type": ["string", "integer", "null"],
+      "description": "Publication year.",
+      "examples": [2023, "2023", "N/A"]
+    },
+    "abstract": {
+      "type": "string",
+      "description": "Paper abstract. May be 'Abstract not available' if not provided by the source.",
+      "maxLength": 10000
+    },
+    "doi": {
+      "type": "string",
+      "description": "Digital Object Identifier. May include 'arxiv:' prefix for arXiv papers. Empty string if unavailable.",
+      "examples": ["10.1038/s41586-023-05881-4", "arxiv:2301.00001"]
+    },
+    "url": {
+      "type": "string",
+      "description": "URL to the paper landing page.",
+      "format": "uri"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "Direct URL to a freely accessible PDF, if available.",
+      "format": "uri"
+    },
+    "journal": {
+      "type": "string",
+      "description": "Journal or conference name.",
+      "examples": ["Nature", "arXiv preprint", "PLOS ONE"]
+    },
+    "publisher": {
+      "type": "string",
+      "description": "Publisher name."
+    },
+    "volume": {
+      "type": ["string", "integer", "null"],
+      "description": "Journal volume number."
+    },
+    "issue": {
+      "type": ["string", "integer", "null"],
+      "description": "Journal issue number."
+    },
+    "pages": {
+      "type": "string",
+      "description": "Page range (e.g., '123-145')."
+    },
+    "citations": {
+      "type": "integer",
+      "description": "Citation count at time of retrieval. Zero for arXiv/PubMed where unavailable.",
+      "minimum": 0
+    },
+    "source": {
+      "type": "string",
+      "description": "Database from which this record was retrieved.",
+      "enum": ["ArXiv", "CrossRef", "PubMed", "OpenAlex", "Semantic Scholar"]
+    },
+    "source_database": {
+      "type": "string",
+      "description": "Alias for source field (legacy compatibility)."
+    },
+    "language": {
+      "type": "string",
+      "description": "Publication language (ISO 639-1 when available).",
+      "default": "en"
+    },
+    "keywords": {
+      "type": "array",
+      "description": "Author-supplied or database-supplied keywords.",
+      "items": { "type": "string" }
+    },
+    "is_open_access": {
+      "type": "boolean",
+      "description": "Whether the paper is available as open access.",
+      "default": false
+    },
+    "verification_status": {
+      "type": "string",
+      "description": "Result of source verification workflow.",
+      "enum": ["verified", "doi_resolves", "metadata_match", "no_doi", "unresolved", "retracted", "not_checked"],
+      "default": "not_checked"
+    },
+    "extraction_timestamp": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when this record was retrieved.",
+      "format": "date-time"
+    },
+    "processed": {
+      "type": "boolean",
+      "description": "Whether paper analysis has been performed.",
+      "default": false
+    },
+    "analysis": {
+      "type": ["object", "null"],
+      "description": "AI-extracted analysis of this paper. See evidence.schema.json for field definitions.",
+      "properties": {
+        "paper_id": { "type": "string" },
+        "paper_category": { "type": "string" },
+        "research_problem": { "type": "string" },
+        "methodology": { "type": "string" },
+        "datasets_used": { "type": "array", "items": { "type": "string" } },
+        "evaluation_metrics": { "type": "array", "items": { "type": "string" } },
+        "key_findings": { "type": "array", "items": { "type": "string" } },
+        "strengths": { "type": "array", "items": { "type": "string" } },
+        "limitations": { "type": "array", "items": { "type": "string" } },
+        "future_work": { "type": "array", "items": { "type": "string" } },
+        "innovation_score": { "type": ["integer", "null"], "minimum": 1, "maximum": 10 },
+        "relevance_score": { "type": ["integer", "null"], "minimum": 1, "maximum": 10 },
+        "summary": { "type": "string" }
+      }
+    }
+  }
+}

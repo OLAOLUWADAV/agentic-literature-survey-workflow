@@ -1,0 +1,178 @@
+version: "3.9"
+
+# =============================================================================
+# Research Intelligence n8n — Docker Compose
+# =============================================================================
+# Services:
+#   n8n          — workflow automation (required)
+#   postgres     — n8n metadata storage (required)
+#   document-processor — PDF extraction service (optional)
+#   ollama       — local LLM inference (optional, see profiles)
+#
+# Usage:
+#   Basic start:    docker compose up -d
+#   With Ollama:    docker compose --profile ollama up -d
+#   Pull model:     docker compose exec ollama ollama pull llama3.2:3b
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — stores n8n's execution history, credentials, and workflow data
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_in_env_file}
+      POSTGRES_NON_ROOT_USER: n8n_readonly
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # n8n — the workflow automation engine
+  # Import workflows from: workflows/core/01_research_orchestrator.json
+  # ---------------------------------------------------------------------------
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # Database
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-change_this_in_env_file}
+      # Security
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE:-true}
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD:-change_this_in_env_file}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change_this_32_char_minimum_key_x}
+      # Webhooks
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678}
+      N8N_DEFAULT_BINARY_DATA_MODE: filesystem
+      # LLM Provider (passed through to workflow expressions via $env.*)
+      LLM_API_BASE_URL: ${LLM_API_BASE_URL:-https://openrouter.ai/api/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-meta-llama/llama-3.2-3b-instruct:free}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-4096}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.3}
+      # Scholarly databases
+      CROSSREF_MAILTO: ${CROSSREF_MAILTO:-research@example.com}
+      SEMANTIC_SCHOLAR_API_KEY: ${SEMANTIC_SCHOLAR_API_KEY:-}
+      NCBI_API_KEY: ${NCBI_API_KEY:-}
+      # Output
+      OUTPUT_DIR: /output
+      OUTPUT_FORMAT: ${OUTPUT_FORMAT:-html,json,markdown}
+      # Document processor
+      DOCUMENT_PROCESSOR_URL: ${DOCUMENT_PROCESSOR_URL:-http://document-processor:8080}
+      # Allow workflow expressions to read environment variables via $env.*
+      # Required for all LLM and API key references in node expressions
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Timezone
+      GENERIC_TIMEZONE: Africa/Lagos
+      TZ: Africa/Lagos
+    volumes:
+      - n8n-data:/home/node/.n8n
+      - output-data:/output
+    networks:
+      - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Document Processor — PDF text extraction service
+  # Provides /extract endpoint for the PDF Processing workflow
+  # Optional: comment out if PDF processing is not needed
+  # ---------------------------------------------------------------------------
+  document-processor:
+    build:
+      context: ./services/document-processor
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      MAX_PDF_SIZE_MB: 50
+      LOG_LEVEL: INFO
+    volumes:
+      # Temporary processing only — no persistent storage of documents
+      - /tmp/doc-processor:/tmp/processing
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Ollama — local LLM inference (optional)
+  # Enable with: docker compose --profile ollama up -d
+  # Pull a model: docker compose exec ollama ollama pull llama3.2:3b
+  # Set in .env: LLM_API_BASE_URL=http://ollama:11434/v1
+  #              LLM_API_KEY=ollama
+  #              LLM_MODEL=llama3.2:3b
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    profiles:
+      - ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - internal
+    # Uncomment the following for NVIDIA GPU support:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  internal:
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  n8n-data:
+    driver: local
+  output-data:
+    driver: local
+  ollama-models:
+    driver: local

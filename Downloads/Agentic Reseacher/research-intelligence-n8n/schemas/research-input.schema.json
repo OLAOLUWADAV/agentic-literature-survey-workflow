@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/research-intelligence-n8n/schemas/research-input.schema.json",
+  "title": "Research Input",
+  "description": "Schema for the research intake form submitted to the Research Intelligence Orchestrator.",
+  "type": "object",
+  "required": ["topic"],
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "The main research topic or question. Must be specific enough to generate meaningful search queries.",
+      "minLength": 10,
+      "maxLength": 500,
+      "examples": [
+        "Machine learning methods for early detection of Alzheimer's disease",
+        "Ethical use of artificial intelligence in higher education assessment",
+        "Sustainable building materials in tropical climates"
+      ]
+    },
+    "discipline": {
+      "type": "string",
+      "description": "The primary academic discipline of the research.",
+      "enum": [
+        "Computer Science",
+        "Medicine & Health Sciences",
+        "Law",
+        "Architecture & Built Environment",
+        "Education",
+        "Social Sciences",
+        "Engineering",
+        "Natural Sciences",
+        "Humanities",
+        "Other"
+      ],
+      "default": "Computer Science"
+    },
+    "research_depth": {
+      "type": "string",
+      "description": "How many papers to retrieve and analyze.",
+      "enum": [
+        "Quick Survey (top 15 papers)",
+        "Standard Review (top 30 papers)",
+        "Deep Systematic (top 50 papers)"
+      ],
+      "default": "Standard Review (top 30 papers)"
+    },
+    "citation_format": {
+      "type": "string",
+      "description": "Reference style for the generated bibliography.",
+      "enum": ["APA 7", "Harvard", "IEEE", "Chicago", "Vancouver"],
+      "default": "APA 7"
+    },
+    "date_from": {
+      "type": ["string", "integer"],
+      "description": "Earliest publication year to include.",
+      "pattern": "^[0-9]{4}$",
+      "default": "2018",
+      "examples": ["2015", "2020"]
+    },
+    "date_to": {
+      "type": ["string", "integer"],
+      "description": "Latest publication year to include.",
+      "pattern": "^[0-9]{4}$",
+      "default": "2026",
+      "examples": ["2024", "2026"]
+    },
+    "language": {
+      "type": "string",
+      "description": "Language restriction for retrieved papers.",
+      "enum": ["English", "Any language"],
+      "default": "English"
+    },
+    "include_pdf_processing": {
+      "type": "boolean",
+      "description": "Whether to attempt full-text extraction for open-access PDFs. Requires document-processor service.",
+      "default": false
+    },
+    "keywords_override": {
+      "type": "array",
+      "description": "Optional: override the AI-generated keywords with specific terms.",
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+      "maxItems": 10,
+      "examples": [["neural network", "EEG", "seizure prediction"]]
+    },
+    "exclusion_terms": {
+      "type": "array",
+      "description": "Terms to exclude from search results.",
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 },
+      "maxItems": 10,
+      "examples": [["detection only", "single-subject"]]
+    },
+    "min_citations": {
+      "type": "integer",
+      "description": "Minimum citation count for included papers (0 = no minimum). Note: recent papers may have few citations.",
+      "minimum": 0,
+      "maximum": 10000,
+      "default": 0
+    },
+    "approval_required": {
+      "type": "boolean",
+      "description": "Whether to pause the workflow for human review before generating the final report.",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

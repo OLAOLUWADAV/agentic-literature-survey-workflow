@@ -1,0 +1,130 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  secrets-scan:
+    name: Scan for hardcoded secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan workflow JSON files for hardcoded secrets
+        run: |
+          echo "=== Scanning workflow files for hardcoded secrets ==="
+          FAIL=0
+
+          PATTERNS=(
+            "sk-or-[A-Za-z0-9]"
+            "sk-ant-[A-Za-z0-9]"
+            "sk-[A-Za-z0-9]{20}"
+            "gsk_[A-Za-z0-9]"
+            "AIzaSy[A-Za-z0-9]"
+            "appM5EgTQe9Hr3xz4"
+            "7NAeONPL992FkwEZ"
+            "37WDOroaDLKeTyzm"
+            "your_api_key_here"
+            "research@survey\\.com"
+            "openrouter/free"
+            "AIRTABLE_API_KEY"
+            "patA[A-Za-z0-9]{14}"
+          )
+
+          for pattern in "${PATTERNS[@]}"; do
+            if grep -rE --include="*.json" --include="*.yml" --include="*.yaml" \
+                        --include="*.ts" --include="*.js" --include="*.py" \
+                        "$pattern" . \
+               --exclude-dir=.git \
+               --exclude-dir=node_modules \
+               -l 2>/dev/null | grep -v "security-checks.yml" | grep -v "workflow-validation.yml" | grep -v "tests/fixtures" > /dev/null; then
+              echo "FAIL: Pattern '$pattern' found in:"
+              grep -rE --include="*.json" --include="*.yml" --include="*.yaml" \
+                       --include="*.ts" --include="*.js" --include="*.py" \
+                       "$pattern" . \
+                --exclude-dir=.git \
+                --exclude-dir=node_modules \
+                -l 2>/dev/null | grep -v "security-checks.yml" | grep -v "workflow-validation.yml" | grep -v "tests/fixtures"
+              FAIL=1
+            fi
+          done
+
+          if [ "$FAIL" -eq 1 ]; then
+            echo ""
+            echo "ERROR: Hardcoded secrets or non-portable values detected."
+            echo "All credentials must use \$env.VAR_NAME in n8n expressions."
+            exit 1
+          else
+            echo "PASS: No hardcoded secrets detected."
+          fi
+
+      - name: Check .env is not committed
+        run: |
+          if git ls-files | grep -q "^\.env$"; then
+            echo "ERROR: .env file is committed. Remove it and add to .gitignore."
+            exit 1
+          fi
+          echo "PASS: .env is not tracked."
+
+      - name: Check .env.example has no real values
+        run: |
+          if grep -E "sk-[A-Za-z0-9]{20,}" .env.example 2>/dev/null; then
+            echo "ERROR: .env.example appears to contain real API keys."
+            exit 1
+          fi
+          echo "PASS: .env.example contains only placeholder values."
+
+  dependency-audit:
+    name: Dependency security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check Python dependencies for known vulnerabilities
+        run: |
+          pip install pip-audit --quiet
+          pip-audit -r services/document-processor/requirements.txt \
+            --no-deps \
+            --format=columns \
+            || echo "WARNING: pip-audit found issues. Review before deploying."
+
+      - name: Verify requirements.txt is pinned
+        run: |
+          echo "Checking that all requirements are pinned..."
+          if grep -E "^[a-zA-Z].*[^=]$" services/document-processor/requirements.txt | grep -v "^#"; then
+            echo "ERROR: Unpinned requirements found. All dependencies must be pinned with ==version."
+            exit 1
+          fi
+          echo "PASS: All requirements are pinned."
+
+  docker-security:
+    name: Docker security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Dockerfile security basics
+        run: |
+          FAIL=0
+
+          # Check non-root user is set
+          if ! grep -q "^USER " services/document-processor/Dockerfile; then
+            echo "WARN: No USER directive in Dockerfile — container runs as root."
+          fi
+
+          # Check no secrets in Dockerfile
+          if grep -Ei "password|secret|key|token" services/document-processor/Dockerfile | grep -v "^#" | grep -v "ENV.*_KEY=" | grep -v "ARG"; then
+            echo "WARN: Possible secret in Dockerfile — use build args or runtime env vars."
+          fi
+
+          echo "Docker security check complete."

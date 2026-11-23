@@ -1,0 +1,120 @@
+name: Workflow Validation
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'workflows/**'
+      - '.github/workflows/workflow-validation.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'workflows/**'
+
+jobs:
+  validate-workflows:
+    name: Validate n8n Workflow JSON
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up jq
+        run: |
+          jq --version || (apt-get update && apt-get install -y jq)
+
+      - name: Find workflow JSON files
+        id: find-workflows
+        run: |
+          FILES=$(find workflows/ -name "*.json" -type f)
+          echo "Found workflow files:"
+          echo "$FILES"
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate JSON syntax
+        run: |
+          FAILED=0
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then continue; fi
+            if jq . "$file" > /dev/null 2>&1; then
+              echo "✓ Valid JSON: $file"
+            else
+              echo "✗ INVALID JSON: $file"
+              jq . "$file" 2>&1 || true
+              FAILED=1
+            fi
+          done <<< "$(find workflows/ -name '*.json' -type f)"
+          if [ "$FAILED" -eq 1 ]; then
+            echo "One or more workflow files contain invalid JSON."
+            exit 1
+          fi
+
+      - name: Check for hardcoded API keys
+        run: |
+          FAILED=0
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then continue; fi
+            if grep -q "your_api_key_here" "$file"; then
+              echo "✗ HARDCODED PLACEHOLDER in $file: found 'your_api_key_here'"
+              FAILED=1
+            fi
+            # Check for real-looking OpenAI keys (sk-proj- pattern)
+            if grep -qE '"sk-[a-zA-Z0-9]{20,}"' "$file"; then
+              echo "✗ POSSIBLE REAL API KEY in $file: found sk-* pattern"
+              FAILED=1
+            fi
+            # Check for hardcoded credential IDs (n8n instance-specific UUIDs in credentials block)
+            if python3 -c "
+          import json, sys
+          data = json.load(open('$file'))
+          for node in data.get('nodes', []):
+            creds = node.get('credentials', {})
+            for cred_type, cred_val in creds.items():
+              if isinstance(cred_val, dict) and 'id' in cred_val:
+                cid = cred_val['id']
+                # Flag IDs that look instance-specific (not template placeholders)
+                if cid and cid not in ['', 'CONFIGURE_ME', 'your-credential-id']:
+                  print(f'Found hardcoded credential ID in {node[\"name\"]}: {cid}')
+                  sys.exit(1)
+          " 2>&1; then
+              true
+            else
+              echo "✗ HARDCODED CREDENTIAL ID in $file"
+              FAILED=1
+            fi
+          done <<< "$(find workflows/ -name '*.json' -type f)"
+          if [ "$FAILED" -eq 1 ]; then
+            echo "Workflow portability check failed."
+            exit 1
+          fi
+          echo "✓ No hardcoded API keys or credential IDs found."
+
+      - name: Check required workflow fields
+        run: |
+          FAILED=0
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then continue; fi
+            HAS_NAME=$(jq -r 'has("name")' "$file")
+            HAS_NODES=$(jq -r 'has("nodes")' "$file")
+            HAS_CONNECTIONS=$(jq -r 'has("connections")' "$file")
+            if [ "$HAS_NAME" != "true" ] || [ "$HAS_NODES" != "true" ] || [ "$HAS_CONNECTIONS" != "true" ]; then
+              echo "✗ MISSING REQUIRED FIELDS in $file (needs: name, nodes, connections)"
+              echo "  name=$HAS_NAME, nodes=$HAS_NODES, connections=$HAS_CONNECTIONS"
+              FAILED=1
+            else
+              NODE_COUNT=$(jq '.nodes | length' "$file")
+              echo "✓ $file — $NODE_COUNT nodes"
+            fi
+          done <<< "$(find workflows/ -name '*.json' -type f)"
+          if [ "$FAILED" -eq 1 ]; then
+            echo "Required fields check failed."
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          TOTAL=$(find workflows/ -name '*.json' -type f | wc -l)
+          echo "✓ All $TOTAL workflow JSON files passed validation."
