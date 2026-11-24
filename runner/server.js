@@ -40,7 +40,10 @@ async function executeSurvey(topic) {
     process.env
   );
   const htmlContent = generateHTMLReport({
-    topic, review, papers: papersToAnalyze, keywords: refined.keywords,
+    topic, review,
+    papers: papersToAnalyze,
+    allPapers: deduplicatedPapers,
+    keywords: refined.keywords,
     reportMeta: { institution: 'SQI College of ICT · Caleb University, Imota, Lagos' }
   });
   return { topic, review, papers: papersToAnalyze, htmlContent };

@@ -57,9 +57,9 @@ async function runSurveyPipeline(topic) {
   const deduplicatedPapers = aggregateAndDeduplicate(searchResults);
   console.log(`  -> Total unique papers after deduplication: ${deduplicatedPapers.length}`);
 
-  // Stage 4: Paper Analysis (Top Papers)
+  // Stage 4: Paper Analysis (Top Papers — deep AI analysis on top 25)
   console.log('\nStep 4/5: Analyzing individual papers with Paper Analyzer Agent...');
-  const papersToAnalyze = deduplicatedPapers.slice(0, 15);
+  const papersToAnalyze = deduplicatedPapers.slice(0, 25);
   for (let i = 0; i < papersToAnalyze.length; i++) {
     const p = papersToAnalyze[i];
     process.stdout.write(`  [${i + 1}/${papersToAnalyze.length}] Analyzing: "${p.title.substring(0, 50)}..."\r`);
@@ -80,6 +80,7 @@ async function runSurveyPipeline(topic) {
     topic,
     review,
     papers: papersToAnalyze,
+    allPapers: deduplicatedPapers,
     keywords: refined.keywords,
     reportMeta: { institution: 'SQI College of ICT · Caleb University, Imota, Lagos' }
   });

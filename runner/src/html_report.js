@@ -14,10 +14,15 @@ function generateHTMLReport({
   topic,
   review = {},
   papers = [],
+  allPapers = null,   // full dedup pool for references (up to 100); falls back to papers
   keywords = [],
   figures = [],
   reportMeta = {}
 }) {
+  // allPapers: entire deduplicated pool for the references section.
+  // papers:    the AI-analysed subset used in the comparison matrix.
+  const refPool = Array.isArray(allPapers) && allPapers.length > papers.length
+    ? allPapers : papers;
   const esc = t => !t ? '' : String(t)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -172,7 +177,7 @@ function generateHTMLReport({
 
   /* ── References list ───────────────────────────────────────────────── */
   function referencesHTML() {
-    return papers.slice(0, 50).map((p, i) => {
+    return refPool.slice(0, 100).map((p, i) => {
       const authStr = esc(Array.isArray(p.authors) ? p.authors.join(', ') : (p.authors || 'Unknown'));
       const journal = esc(p.journal || p.source);
       const yr = esc(p.year || 'n.d.');
