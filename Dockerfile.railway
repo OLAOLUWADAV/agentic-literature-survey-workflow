@@ -17,6 +17,8 @@ RUN chmod +x /railway-entrypoint.sh && chown -R node:node /home/node/runner
 
 USER node
 
-EXPOSE 5678
+# Railway injects PORT at runtime; the runner server binds to it.
+# n8n runs on the internal fixed port 5678.
+EXPOSE 3000
 
 ENTRYPOINT ["/railway-entrypoint.sh"]

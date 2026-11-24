@@ -4,23 +4,61 @@
 }
 
 {$DOMAIN_NAME:localhost} {
-  # Reverse proxy all requests to n8n container
-  reverse_proxy n8n:5678 {
-    # WebSocket support (crucial for n8n execution canvas & live updates)
-    header_up Host {host}
-    header_up X-Real-IP {remote}
-    header_up X-Forwarded-For {remote}
-    header_up X-Forwarded-Proto {scheme}
 
-    # Timeouts tuned for long-running AI synthesis agent workflows (10 minutes)
-    transport http {
-      response_header_timeout 600s
-      read_timeout 600s
-      write_timeout 600s
+  # ── Runner: homepage UI + REST API ──────────────────────────────────
+  # The standalone Node.js server serves the survey UI at / and the
+  # REST API at /api/*. It also exposes /healthz for health checks.
+  handle / {
+    reverse_proxy runner:3000 {
+      header_up Host {host}
+      header_up X-Real-IP {remote}
+      header_up X-Forwarded-For {remote}
+      header_up X-Forwarded-Proto {scheme}
+      transport http {
+        response_header_timeout 300s
+        read_timeout 300s
+        write_timeout 300s
+      }
     }
   }
 
-  # Security headers
+  handle /api/* {
+    reverse_proxy runner:3000 {
+      header_up Host {host}
+      header_up X-Real-IP {remote}
+      header_up X-Forwarded-For {remote}
+      header_up X-Forwarded-Proto {scheme}
+      transport http {
+        # Survey generation can take up to 2 minutes
+        response_header_timeout 150s
+        read_timeout 150s
+        write_timeout 150s
+      }
+    }
+  }
+
+  handle /healthz {
+    reverse_proxy runner:3000
+  }
+
+  # ── n8n: workflow canvas, webhooks, form triggers ───────────────────
+  handle /* {
+    reverse_proxy n8n:5678 {
+      header_up Host {host}
+      header_up X-Real-IP {remote}
+      header_up X-Forwarded-For {remote}
+      header_up X-Forwarded-Proto {scheme}
+
+      # WebSocket support for the n8n execution canvas
+      transport http {
+        response_header_timeout 600s
+        read_timeout 600s
+        write_timeout 600s
+      }
+    }
+  }
+
+  # ── Security headers ─────────────────────────────────────────────────
   header {
     X-Frame-Options "SAMEORIGIN"
     X-XSS-Protection "1; mode=block"
@@ -29,10 +67,8 @@
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
   }
 
-  # Compression
   encode zstd gzip
 
-  # Access logging
   log {
     output stdout
     format console

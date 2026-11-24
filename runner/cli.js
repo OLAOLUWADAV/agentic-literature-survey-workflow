@@ -80,7 +80,8 @@ async function runSurveyPipeline(topic) {
     topic,
     review,
     papers: papersToAnalyze,
-    keywords: refined.keywords
+    keywords: refined.keywords,
+    reportMeta: { institution: 'SQI College of ICT · Caleb University, Imota, Lagos' }
   });
 
   // Save Outputs

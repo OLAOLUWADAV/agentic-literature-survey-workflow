@@ -25,6 +25,9 @@ if (fs.existsSync(envPath)) {
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
+let LOGO1 = '', LOGO2 = '';
+try { const logos = require('./assets/logos'); LOGO1 = logos.LOGO1||''; LOGO2 = logos.LOGO2||''; } catch {}
+
 async function executeSurvey(topic) {
   const refined = await refineQuery(topic, process.env);
   const searchResults = await performFederatedSearch({ topic, refinedQueries: refined.refined_queries });
@@ -36,7 +39,10 @@ async function executeSurvey(topic) {
     { topic, papers: papersToAnalyze, keywords: refined.keywords, domain: refined.domain || '' },
     process.env
   );
-  const htmlContent = generateHTMLReport({ topic, review, papers: papersToAnalyze, keywords: refined.keywords });
+  const htmlContent = generateHTMLReport({
+    topic, review, papers: papersToAnalyze, keywords: refined.keywords,
+    reportMeta: { institution: 'SQI College of ICT · Caleb University, Imota, Lagos' }
+  });
   return { topic, review, papers: papersToAnalyze, htmlContent };
 }
 
@@ -500,7 +506,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:22px 0;}
 <!-- ── Top bar ──────────────────────────────────────────────────── -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="org-seal">${SQI_LOGO}</div>
+    <div class="org-seal">${LOGO1 ? `<img src="${LOGO1}" alt="SQI College of ICT" style="width:42px;height:42px;object-fit:contain;border-radius:4px">` : SQI_LOGO}</div>
     <div class="brand-info">
       <div class="brand-name">SQI College of ICT</div>
       <div class="brand-sub">Caleb University &bull; Imota, Lagos</div>
@@ -508,7 +514,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:22px 0;}
   </div>
   <span class="nav-tag">Research Suite</span>
   <div class="topbar-divider"></div>
-  <div class="org-seal">${CU_LOGO}</div>
+  <div class="org-seal">${LOGO2 ? `<img src="${LOGO2}" alt="Caleb University" style="width:42px;height:42px;object-fit:contain;border-radius:4px">` : CU_LOGO}</div>
 </div>
 
 <div class="wrap">
@@ -664,7 +670,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:22px 0;}
 <div class="footer">
   <div class="footer-logos">
     <div class="footer-org">
-      <div class="footer-seal">${SQI_LOGO}</div>
+      <div class="footer-seal">${LOGO1 ? `<img src="${LOGO1}" alt="SQI" style="width:48px;height:48px;object-fit:contain;border-radius:4px">` : SQI_LOGO}</div>
       <div class="footer-org-info">
         <div class="footer-org-name">SQI College of ICT</div>
         <div class="footer-org-sub">Information &amp; Communication Technology</div>
@@ -672,7 +678,7 @@ hr.div{border:none;border-top:1px solid var(--border);margin:22px 0;}
     </div>
     <div class="footer-sep"></div>
     <div class="footer-org">
-      <div class="footer-seal">${CU_LOGO}</div>
+      <div class="footer-seal">${LOGO2 ? `<img src="${LOGO2}" alt="Caleb University" style="width:48px;height:48px;object-fit:contain;border-radius:4px">` : CU_LOGO}</div>
       <div class="footer-org-info">
         <div class="footer-org-name">Caleb University</div>
         <div class="footer-org-sub">Imota, Lagos, Nigeria</div>

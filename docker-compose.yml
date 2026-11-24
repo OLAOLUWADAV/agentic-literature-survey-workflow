@@ -83,11 +83,43 @@ services:
       - caddy_config:/config
     depends_on:
       - n8n
+      - runner
     networks:
       - survey_network
 
   # ==============================================================================
-  # 4. Automated Workflow Importer & Activator
+  # 4. Standalone Runner API (REST endpoint + HTML report generator)
+  # ==============================================================================
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    container_name: literature_survey_runner
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+      - GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
+    volumes:
+      - runner_output:/app/output
+    networks:
+      - survey_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+  # ==============================================================================
+  # 5. Automated Workflow Importer & Activator
   # ==============================================================================
   n8n-init:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -126,6 +158,8 @@ volumes:
   caddy_data:
     driver: local
   caddy_config:
+    driver: local
+  runner_output:
     driver: local
 
 networks:
