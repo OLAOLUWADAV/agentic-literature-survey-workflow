@@ -97,7 +97,6 @@ Import the workflow and verify it runs before making changes.
 4. Update documentation if you changed behavior
 5. Update `CHANGELOG.md` under `[Unreleased]`
 6. Submit a PR with a clear description of what changed and why
-
 ---
 
 ## Schema changes

@@ -1,10 +1,30 @@
-# Agentic Literature Survey Workflow
+<div align="center">
 
-> Self-hostable academic literature review automation powered by n8n.
+```
+ ██████╗ ███████╗███████╗███████╗ █████╗ ██████╗  ██████╗██╗  ██╗
+ ██╔══██╗██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝██║  ██║
+ ██████╔╝█████╗  ███████╗█████╗  ███████║██████╔╝██║     ███████║
+ ██╔══██╗██╔══╝  ╚════██║██╔══╝  ██╔══██║██╔══██╗██║     ██╔══██║
+ ██║  ██║███████╗███████║███████╗██║  ██║██║  ██║╚██████╗██║  ██║
+ ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+
+      Agentic Literature Survey Workflow
+```
+
+**Self-hostable academic literature review automation powered by n8n**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![n8n](https://img.shields.io/badge/built%20with-n8n-orange)](https://n8n.io)
-[![Docker](https://img.shields.io/badge/docker-compose-blue)](docker-compose.yml)
+[![n8n](https://img.shields.io/badge/built%20with-n8n-FF6D5A?logo=n8n&logoColor=white)](https://n8n.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+[![ArXiv](https://img.shields.io/badge/ArXiv-B31B1B?logo=arxiv&logoColor=white)](https://arxiv.org)
+[![PubMed](https://img.shields.io/badge/PubMed-326599?logo=pubmed&logoColor=white)](https://pubmed.ncbi.nlm.nih.gov)
+[![OpenAlex](https://img.shields.io/badge/OpenAlex-5145CD?logoColor=white)](https://openalex.org)
+[![Semantic Scholar](https://img.shields.io/badge/Semantic%20Scholar-1857B6?logoColor=white)](https://www.semanticscholar.org)
+[![CrossRef](https://img.shields.io/badge/CrossRef-FF8800?logoColor=white)](https://www.crossref.org)
+
+</div>
+
+---
 
 Searches five scholarly databases simultaneously, scores and deduplicates papers, runs AI-assisted analysis, then generates a **full structured literature review** — with inline citation markers, 5 bibliometric charts, and an optional chapter layout — in HTML, Markdown, and JSON.
 
@@ -21,20 +41,62 @@ Searches five scholarly databases simultaneously, scores and deduplicates papers
 5. **Human review gate** — Pauses the workflow. You review the draft and approve or reject before final reports are generated.
 6. **Report generation** — Full HTML report with inline `[N]` citation markers, 5 bibliometric SVG charts, optional chapter layout, evidence cards (Appendix B), and a 50-paper literature matrix (Appendix C). Also exports Markdown and JSON.
 
+### Pipeline overview
+
+```
+  Research Topic
+       │
+       ▼
+  ┌─────────────┐
+  │ Query       │  Refines raw topic into 3–5 optimised academic search strings
+  │ Refiner     │
+  └──────┬──────┘
+         │  parallel fetch (5 sources)
+    ┌────┴────┬──────────┬──────────┬──────────┐
+    ▼         ▼          ▼          ▼          ▼
+ ArXiv    CrossRef    PubMed   OpenAlex  Semantic
+                                         Scholar
+    └────┬────┴──────────┴──────────┴──────────┘
+         │
+         ▼
+  ┌─────────────┐
+  │ Dedup &     │  DOI-first → normalised-title dedup; innovation scoring
+  │ Normalise   │
+  └──────┬──────┘
+         │
+         ▼
+  ┌─────────────┐
+  │ AI Paper    │  Per-abstract: problem · method · findings · gaps · score
+  │ Analyser    │
+  └──────┬──────┘
+         │
+         ▼
+  ┌─────────────┐
+  │ Human       │  Webhook pause — approve / reject before final output
+  │ Review Gate │
+  └──────┬──────┘
+         │
+         ▼
+  ┌─────────────┐
+  │ Report      │  HTML (charts + citations) · Markdown · JSON
+  │ Generator   │
+  └─────────────┘
+```
+
 ---
 
 ## Supported LLM providers
 
 All providers use the same OpenAI-compatible endpoint pattern. Switch by changing three environment variables.
 
-| Provider | Free tier | Local |
-|----------|-----------|-------|
-| OpenRouter (free models) | Yes | No |
-| Ollama | Yes (hardware cost) | Yes |
-| Groq | Yes (rate limited) | No |
-| Google Gemini | Yes (rate limited) | No |
-| OpenAI | No | No |
-| Anthropic (via OpenRouter) | No | No |
+| Provider | Logo | Free tier | Local |
+|----------|------|-----------|-------|
+| OpenRouter (free models) | ![OpenRouter](https://img.shields.io/badge/OpenRouter-6E42C1?logoColor=white&style=flat-square) | Yes | No |
+| Ollama | ![Ollama](https://img.shields.io/badge/Ollama-000000?logo=ollama&logoColor=white&style=flat-square) | Yes (hardware cost) | Yes |
+| Groq | ![Groq](https://img.shields.io/badge/Groq-F55036?logoColor=white&style=flat-square) | Yes (rate limited) | No |
+| Google Gemini | ![Gemini](https://img.shields.io/badge/Gemini-4285F4?logo=google&logoColor=white&style=flat-square) | Yes (rate limited) | No |
+| OpenAI | ![OpenAI](https://img.shields.io/badge/OpenAI-412991?logo=openai&logoColor=white&style=flat-square) | No | No |
+| Anthropic (via OpenRouter) | ![Anthropic](https://img.shields.io/badge/Anthropic-CC785C?logoColor=white&style=flat-square) | No | No |
 
 ---
 
@@ -201,6 +263,19 @@ Read [`docs/RESEARCH_ETHICS.md`](docs/RESEARCH_ETHICS.md) before using this in r
 
 ---
 
+## Built with
+
+<div align="center">
+
+[![n8n](https://img.shields.io/badge/n8n-Workflow%20Automation-FF6D5A?logo=n8n&logoColor=white&style=for-the-badge)](https://n8n.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white&style=for-the-badge)](https://www.postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-Containerised-2496ED?logo=docker&logoColor=white&style=for-the-badge)](https://www.docker.com)
+[![Redis](https://img.shields.io/badge/Redis-Queue-DC382D?logo=redis&logoColor=white&style=for-the-badge)](https://redis.io)
+
+</div>
+
+---
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE)
@@ -216,3 +291,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md)
 ## Security
 
 See [`SECURITY.md`](SECURITY.md) for the security policy and how to report vulnerabilities.
+
+---
+
+<div align="center">
+
+Made with ❤️ for the research community · [Issues](../../issues) · [Discussions](../../discussions)
+
+</div>
